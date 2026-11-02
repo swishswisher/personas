@@ -1,0 +1,59 @@
+{
+  "checks": [
+    {
+      "name": "Body text",
+      "foreground": "#363044",
+      "background": "#FFFCFA",
+      "contrast": 12.36,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "name": "Muted text",
+      "foreground": "#70677C",
+      "background": "#FFFCFA",
+      "contrast": 5.24,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "name": "Primary button",
+      "foreground": "#FFFFFF",
+      "background": "#73549B",
+      "contrast": 6.05,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "name": "Warning text",
+      "foreground": "#795019",
+      "background": "#FFF2DB",
+      "contrast": 6.38,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "name": "Error text",
+      "foreground": "#A83135",
+      "background": "#FFF0ED",
+      "contrast": 6,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "name": "Input boundaries",
+      "foreground": "#9B8FA7",
+      "background": "#FFFFFF",
+      "contrast": 3.05,
+      "minimum": 3,
+      "passed": true
+    }
+  ],
+  "responsive": {
+    "breakpoints": true,
+    "reducedMotion": true,
+    "visibleFocus": true,
+    "skipLink": true
+  },
+  "limitation": "Token/CSS checks only. These do not establish rendered responsive behavior or WCAG compliance."
+}

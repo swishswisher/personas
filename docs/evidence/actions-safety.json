@@ -1,0 +1,11 @@
+{
+  "checkedAt": "2026-11-02T12:34:50.167Z",
+  "repository": "swishswisher/personas",
+  "baseBranch": "master",
+  "baseCommit": "444c4b7a5cdebf5bb43265fe0a47af4cf3b39ee5",
+  "remoteWorkflowFiles": [],
+  "localWorkflowFiles": [],
+  "repositoryRulesets": "No rulesets returned by the read-only GitHub rulesets API during release preparation",
+  "actionsUsed": false,
+  "decision": "Safe to push this implementation branch: no workflow files on either side."
+}

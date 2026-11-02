@@ -1,0 +1,23 @@
+{
+  "checkedAt": "2026-11-02T12:34:40.959Z",
+  "command": "npm audit --omit=dev",
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "dependencies": {
+      "prod": 266,
+      "dev": 837,
+      "optional": 380,
+      "peer": 39,
+      "peerOptional": 0,
+      "total": 1210
+    }
+  },
+  "vulnerabilities": {}
+}
