@@ -3,6 +3,7 @@ import { PGLiteSocketServer } from "@electric-sql/pglite-socket";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import assert from "node:assert/strict";
+import { createServer } from "node:http";
 const origin = "http://127.0.0.1:3101";
 Object.assign(process.env, {
   DATABASE_URL:
@@ -14,7 +15,25 @@ Object.assign(process.env, {
   ALLOW_LOCAL_STORAGE: "true",
   FILE_STORAGE: "local",
   LOCAL_STORAGE_DIR: ".data/http-files",
+  CRON_SECRET: "http-fixture-worker-secret",
+  UPLOAD_SCAN_URL: "http://127.0.0.1:55668/scan",
+  UPLOAD_SCAN_TOKEN: "fixture-scanner-token",
 });
+// Contract stub for the scanner boundary; this is not a real malware scanner.
+const scanner = createServer((request, response) => {
+  request.resume();
+  request.on("end", () => {
+    response.setHeader("Content-Type", "application/json");
+    response.end(
+      JSON.stringify({
+        clean: request.headers.authorization === "Bearer fixture-scanner-token",
+      }),
+    );
+  });
+});
+await new Promise<void>((resolve) =>
+  scanner.listen(55668, "127.0.0.1", resolve),
+);
 const pg = await PGlite.create();
 await pg.exec(
   await readFile(
@@ -280,6 +299,50 @@ try {
   assert.equal(extracted.status, "ready");
   assert(extracted.text.includes("UTF-8"));
   ok("Private upload → background text extraction → persisted source");
+  const { renderPdf } = await import("../src/server/jobs");
+  const pdfBody = await renderPdf(
+    {
+      ...content,
+      classification: "finding",
+      claims: content.claims.map((cl) => ({
+        ...cl,
+        classification: "finding",
+      })),
+    } as import("../src/lib/domain").PersonaContent,
+    1,
+  );
+  const pdfUpload = new FormData();
+  pdfUpload.append("projectId", projectId);
+  pdfUpload.append(
+    "file",
+    new File([new Uint8Array(pdfBody)], "fixture.pdf", {
+      type: "application/pdf",
+    }),
+  );
+  const pdfResponse = await fetch(
+    origin + `/api/v1/workspaces/${workspaceId}/upload`,
+    {
+      method: "POST",
+      headers: {
+        origin,
+        cookie: [...jar].map(([k, v]) => k + "=" + v).join("; "),
+      },
+      body: pdfUpload,
+    },
+  );
+  assert.equal(pdfResponse.status, 200);
+  const pdfSource = await pdfResponse.json();
+  const workerResponse = await fetch(origin + "/api/jobs", {
+    headers: { Authorization: "Bearer http-fixture-worker-secret" },
+  });
+  assert.equal(workerResponse.status, 200);
+  const pdfExtracted = await json(
+    `/api/v1/workspaces/${workspaceId}/sources/${pdfSource.id}`,
+  );
+  assert.equal(pdfExtracted.status, "ready", pdfExtracted.failure);
+  assert(pdfExtracted.text.includes("HTTP deliberate buyer"));
+  ok("PDF upload → scanner contract → bundled Next.js worker extraction");
+
   const pages = [
     "",
     "projects",
@@ -393,4 +456,5 @@ try {
   await db.$disconnect();
   await server.stop();
   await pg.close();
+  await new Promise<void>((resolve) => scanner.close(() => resolve()));
 }

@@ -3156,3 +3156,16 @@ select {
 .prose-content {
   overflow-wrap: anywhere;
 }
+/* Preserve readable text when the featured pricing card uses a light surface. */
+.pricing-card.featured {
+  color: var(--ink);
+  background: #faf6ff;
+}
+.pricing-card.featured p,
+.pricing-card.featured small {
+  color: var(--muted);
+}
+.pricing-card.featured h2,
+.pricing-card.featured .row {
+  color: var(--ink);
+}

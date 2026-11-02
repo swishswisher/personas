@@ -1,31 +1,31 @@
 {
-  "date": "2026-11-02T12:33:15.507Z",
+  "date": "2026-11-02T12:48:08.523Z",
   "engine": "Next.js production server + PostgreSQL WASM/PGlite over TCP",
   "checks": [
     {
       "check": "Public page /",
       "status": "passed",
-      "ms": 11
+      "ms": 13
     },
     {
       "check": "Public page /product",
       "status": "passed",
-      "ms": 251
+      "ms": 254
     },
     {
       "check": "Public page /solutions",
       "status": "passed",
-      "ms": 21
+      "ms": 37
     },
     {
       "check": "Public page /solutions/agencies",
       "status": "passed",
-      "ms": 33
+      "ms": 22
     },
     {
       "check": "Public page /solutions/product-teams",
       "status": "passed",
-      "ms": 23
+      "ms": 21
     },
     {
       "check": "Public page /solutions/marketers",
@@ -35,52 +35,52 @@
     {
       "check": "Public page /methodology",
       "status": "passed",
-      "ms": 11
+      "ms": 14
     },
     {
       "check": "Public page /examples",
       "status": "passed",
-      "ms": 13
+      "ms": 11
     },
     {
       "check": "Public page /resources",
       "status": "passed",
-      "ms": 12
+      "ms": 19
     },
     {
       "check": "Public page /resources/evidence",
       "status": "passed",
-      "ms": 12
+      "ms": 16
     },
     {
       "check": "Public page /resources/interviews",
       "status": "passed",
-      "ms": 15
+      "ms": 14
     },
     {
       "check": "Public page /resources/living-personas",
       "status": "passed",
-      "ms": 10
+      "ms": 13
     },
     {
       "check": "Public page /pricing",
       "status": "passed",
-      "ms": 12
+      "ms": 14
     },
     {
       "check": "Public page /about",
       "status": "passed",
-      "ms": 11
+      "ms": 12
     },
     {
       "check": "Public page /contact",
       "status": "passed",
-      "ms": 10
+      "ms": 14
     },
     {
       "check": "Public page /privacy",
       "status": "passed",
-      "ms": 11
+      "ms": 9
     },
     {
       "check": "Public page /terms",
@@ -90,12 +90,12 @@
     {
       "check": "Public page /login",
       "status": "passed",
-      "ms": 24
+      "ms": 23
     },
     {
       "check": "Public page /signup",
       "status": "passed",
-      "ms": 7
+      "ms": 9
     },
     {
       "check": "Public page /reset",
@@ -110,12 +110,12 @@
     {
       "check": "Public page /invite",
       "status": "passed",
-      "ms": 6
+      "ms": 10
     },
     {
       "check": "Public page /onboarding",
       "status": "passed",
-      "ms": 9
+      "ms": 12
     },
     {
       "check": "Enquiry persists",
@@ -135,6 +135,10 @@
     },
     {
       "check": "Private upload → background text extraction → persisted source",
+      "status": "passed"
+    },
+    {
+      "check": "PDF upload → scanner contract → bundled Next.js worker extraction",
       "status": "passed"
     },
     {
@@ -158,7 +162,7 @@
       "status": "passed"
     },
     {
-      "check": "Authenticated page /app/research/cmvz8p9pp00089ol8pq1ama90",
+      "check": "Authenticated page /app/research/cmvz98dzl000876l894lzbimc",
       "status": "passed"
     },
     {

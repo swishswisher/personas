@@ -25,13 +25,15 @@ export default async function Page({
         />
       </Suspense>
     );
-  const content = await db.contentRevision
-    .findFirst({
-      where: { slug: path, published: true },
-      orderBy: { createdAt: "desc" },
-      select: { title: true, body: true },
-    })
-    .catch(() => null);
+  const content = process.env.DATABASE_URL
+    ? await db.contentRevision
+        .findFirst({
+          where: { slug: path, published: true },
+          orderBy: { createdAt: "desc" },
+          select: { title: true, body: true },
+        })
+        .catch(() => null)
+    : null;
   if (!publicPaths.includes(path) && !content) notFound();
   return <PublicPage path={path} content={content} />;
 }

@@ -1,7 +1,13 @@
 import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  serverExternalPackages: ["pg"],
+  serverExternalPackages: ["pg", "pdf-parse"],
+  outputFileTracingIncludes: {
+    "/api/jobs": [
+      "./node_modules/pdfjs-dist/legacy/build/*.mjs",
+      "./node_modules/@napi-rs/canvas*/**/*",
+    ],
+  },
   async headers() {
     return [
       {

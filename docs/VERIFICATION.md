@@ -2,19 +2,19 @@
 
 Checked in the execution environment on 2 November 2026. All automated checks were run locally; GitHub Actions were not used.
 
-| Check                              | Result                            | Scope                                                                                                             |
-| ---------------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| TypeScript                         | Passed                            | Strict `tsc --noEmit` across application, scripts and tests                                                       |
-| ESLint                             | Passed, zero errors/warnings      | Next.js, TypeScript, React hooks and accessibility-oriented rules                                                 |
-| Unit and integration tests         | 54 passed                         | 11 domain/output tests and 43 database/service/auth/recovery tests                                                |
-| Next.js production build           | Passed                            | Next.js 16.4.4 with React 19.3.1; server/client bundles and route generation                                      |
-| Production-server HTTP/SSR flow    | 56 checks passed                  | Public routes, customer pages, six staff pages and authenticated research-to-publication behavior                 |
-| Production dependency audit        | Zero reported vulnerabilities     | `npm audit --omit=dev`; registry findings at the recorded check time, not a security certification                |
-| Design token checks                | Passed                            | Body/muted/button/warning/error contrast and input boundaries; responsive/reduced-motion/focus CSS present        |
-| Development database recovery      | Passed                            | Exported PostgreSQL WASM data directory, restored into a fresh engine, verified persona and revision data         |
-| Managed PostgreSQL migration       | Passed                            | Both committed migrations applied to isolated Neon project; migration names/checksums recorded                    |
-| Browser/mobile/screen-reader audit | Pending                           | Shared managed browser preview belongs to another project and was preserved; hosted environment access is blocked |
-| Real provider transactions         | Pending credentials/configuration | No live email, S3/scanner, AI generation, payment, or production restore drill was claimed                        |
+| Check                              | Result                            | Scope                                                                                                                                                                      |
+| ---------------------------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TypeScript                         | Passed                            | Strict `tsc --noEmit` across application, scripts and tests                                                                                                                |
+| ESLint                             | Passed, zero errors/warnings      | Next.js, TypeScript, React hooks and accessibility-oriented rules                                                                                                          |
+| Unit and integration tests         | 54 passed                         | 11 domain/output tests and 43 database/service/auth/recovery tests                                                                                                         |
+| Next.js production build           | Passed                            | Next.js 16.4.4 with React 19.3.1; server/client bundles and route generation                                                                                               |
+| Production-server HTTP/SSR flow    | 57 checks passed                  | Public routes, customer pages, six staff pages, authenticated research-to-publication behavior, and PDF extraction through the bundled worker with a test scanner contract |
+| Production dependency audit        | Zero reported vulnerabilities     | `npm audit --omit=dev`; registry findings at the recorded check time, not a security certification                                                                         |
+| Design token checks                | Passed                            | Body/muted/button/warning/error contrast and input boundaries; responsive/reduced-motion/focus CSS present                                                                 |
+| Development database recovery      | Passed                            | Exported PostgreSQL WASM data directory, restored into a fresh engine, verified persona and revision data                                                                  |
+| Managed PostgreSQL migration       | Passed                            | Both committed migrations applied to isolated Neon project; migration names/checksums recorded                                                                             |
+| Browser/mobile/screen-reader audit | Pending                           | Shared managed browser preview belongs to another project and was preserved; hosted environment access is blocked                                                          |
+| Real provider transactions         | Pending credentials/configuration | No live email, S3/scanner, AI generation, payment, or production restore drill was claimed                                                                                 |
 
 ## Verified behavior
 
@@ -45,3 +45,7 @@ npm audit --omit=dev
 The integration suite creates an isolated PostgreSQL WASM/PGlite engine and loads both SQL migrations. The HTTP harness starts a built Next.js server and a separate isolated database in the same process environment; it exercises actual cookies, route handlers, Prisma writes, background jobs and responses. No customer database or provider credentials are used by these tests.
 
 Machine-readable evidence is in `docs/evidence/`: HTTP checks, static design checks, local response timings/artifact sizes, dependency versions, and the Actions release guard. Token-level contrast and HTTP checks do not establish rendered mobile behavior, assistive-technology usability, or Core Web Vitals. A production-size native PostgreSQL/object restore and real sandbox provider journeys remain launch checks listed in `LAUNCH.md`.
+
+## Deployed preview follow-up
+
+The first isolated Vercel preview reached READY and its public homepage and pricing navigation were inspected in the cloud browser. That review found and corrected featured-card text contrast and an unnecessary database connection delay on unconfigured public pages. A dedicated production-server smoke check now verifies product/pricing/contact rendering without a database and explicit registration unavailability without email delivery (four checks passed). The hosted runtime is pinned to Node 24, matching local validation. Complete authenticated/mobile/screen-reader verification still requires the configured hosted services.

@@ -6,7 +6,7 @@ The original static gallery is preserved in Git history. No separate backend or 
 
 ## Run locally
 
-Requires Node.js 24 LTS and npm. Node.js 22.12+ is also supported by the dependencies.
+Requires Node.js 24 LTS and npm. The runtime is pinned to the same major used for validation.
 
 ```bash
 npm ci

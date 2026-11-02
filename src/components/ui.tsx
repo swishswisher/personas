@@ -247,11 +247,13 @@ export function Portrait({ tone = 0 }: { tone?: number }) {
     </div>
   );
 }
-export function Spinner() {
+export function Spinner({
+  label = "Loading your workspace…",
+}: { label?: string } = {}) {
   return (
     <div className="loading-state" role="status">
       <span className="spinner" />
-      <span>Loading your workspace…</span>
+      <span>{label}</span>
     </div>
   );
 }

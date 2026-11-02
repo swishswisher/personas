@@ -1,8 +1,8 @@
 {
   "scope": "Local production-server response timing and emitted JavaScript artifact sizes; not a Core Web Vitals or browser audit.",
   "pagesMeasured": 23,
-  "p50ResponseMs": 11,
-  "p95ResponseMs": 33,
+  "p50ResponseMs": 14,
+  "p95ResponseMs": 37,
   "largestChunks": [
     {
       "file": "34-s9nvef5sdp.js",
