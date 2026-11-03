@@ -136,10 +136,14 @@ export async function reviewPersona(
   );
   await db.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT id FROM "Workspace" WHERE id=${workspaceId} FOR UPDATE`;
+    const current = await tx.persona.findUniqueOrThrow({
+      where: { id: personaId },
+    });
     const changed = await tx.persona.updateMany({
       where: {
         id: personaId,
         workspaceId,
+        deletedAt: null,
         version,
         status:
           action === "submit"
@@ -176,7 +180,7 @@ export async function reviewPersona(
         : action === "approve"
           ? "Persona approved"
           : "Changes requested",
-      `${persona.name} · revision ${version}`,
+      `${current.name} · revision ${version}`,
       `/app/persona?id=${personaId}&project=${persona.projectId}`,
       persona.projectId,
     );

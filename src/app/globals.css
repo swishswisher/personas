@@ -2664,6 +2664,8 @@ summary:focus-visible {
   margin: auto;
 }
 .app-main {
+  /* The fixed sidebar is out of grid flow; keep content in its own column. */
+  grid-column: 2;
   min-width: 0;
 }
 .appbar {

@@ -929,6 +929,56 @@ describe("additional integrity and recovery paths", () => {
 });
 
 describe("upload and queue recovery", () => {
+  it("claims a queued job once across parallel workers and dead-letters an expired final lease", async () => {
+    const job = await db.job.create({
+      data: {
+        key: "parallel-worker-fixture",
+        kind: "delete_file",
+        payload: { fileKey: "research/absent-fixture" },
+      },
+    });
+    await Promise.all([jobs.runJobs(40), jobs.runJobs(40)]);
+    const complete = await db.job.findUniqueOrThrow({ where: { id: job.id } });
+    expect(complete.status).toBe("complete");
+    expect(complete.attempts).toBe(1);
+    const stale = await db.job.create({
+      data: {
+        key: "stale-final-fixture",
+        kind: "extract",
+        payload: {},
+        status: "processing",
+        attempts: 5,
+        lockedAt: new Date(Date.now() - 11 * 60000),
+        lockToken: "expired-fixture",
+      },
+    });
+    await jobs.runJobs(1);
+    expect(
+      (await db.job.findUniqueOrThrow({ where: { id: stale.id } })).status,
+    ).toBe("dead");
+  });
+  it("flags only permitted overdue sources for the configured retention review interval", async () => {
+    const source = await db.researchSource.create({
+      data: {
+        workspaceId: ws,
+        projectId: project,
+        title: "Retention fixture",
+        kind: "note",
+        text: "Review consent and relevance",
+        tags: [],
+        createdAt: new Date(Date.now() - 400 * 86400000),
+      },
+    });
+    const ownerData = await queries.workspaceData(owner, ws, project);
+    expect(ownerData.counts.retentionDue).toBe(1);
+    expect(
+      (await queries.workspaceData(viewer, ws, project)).counts.retentionDue,
+    ).toBe(0);
+    await command(owner, ws, { action: "source.delete", sourceId: source.id });
+    expect(
+      (await queries.workspaceData(owner, ws, project)).counts.retentionDue,
+    ).toBe(0);
+  });
   it("does not leak restricted project names in notifications or queued emails", async () => {
     const p = await personas.savePersona(owner, ws, {
       projectId: restricted,

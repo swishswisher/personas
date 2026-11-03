@@ -232,7 +232,7 @@ export function Workspace({ section }: { section: string }) {
     (requestedProject && data.selectedProject !== requestedProject)
   )
     return (
-      <main id="main" className="not-found stack">
+      <main tabIndex={-1} id="main" className="not-found stack">
         <Logo />
         {error ? (
           <>
@@ -417,7 +417,7 @@ export function Workspace({ section }: { section: string }) {
             </button>
           </div>
         </header>
-        <main className="app-content" id="main">
+        <main className="app-content" tabIndex={-1} id="main">
           <div className="content-limit">
             {data.workspace.demo && (
               <div className="notice amber mb24">

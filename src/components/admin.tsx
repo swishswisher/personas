@@ -53,7 +53,7 @@ export function Admin({ section }: { section: string }) {
   }
   if (!data)
     return (
-      <main id="main" className="not-found stack">
+      <main tabIndex={-1} id="main" className="not-found stack">
         <Logo />
         {error ? <Notice tone="red">{error}</Notice> : <Spinner />}
       </main>
@@ -98,7 +98,7 @@ export function Admin({ section }: { section: string }) {
             Workspace <Icon name="arrow" />
           </Link>
         </header>
-        <main id="main" className="app-content">
+        <main tabIndex={-1} id="main" className="app-content">
           <div className="content-limit">
             <nav className="admin-mobile-nav row">
               {[

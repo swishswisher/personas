@@ -1,6 +1,5 @@
-import { PGlite } from "@electric-sql/pglite";
-import { PGLiteSocketServer } from "@electric-sql/pglite-socket";
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { testDatabase } from "./test-database";
+import { writeFile, mkdir } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
@@ -34,26 +33,8 @@ const scanner = createServer((request, response) => {
 await new Promise<void>((resolve) =>
   scanner.listen(55668, "127.0.0.1", resolve),
 );
-const pg = await PGlite.create();
-await pg.exec(
-  await readFile(
-    "prisma/migrations/202611020001_initial/migration.sql",
-    "utf8",
-  ),
-);
-await pg.exec(
-  await readFile(
-    "prisma/migrations/202611020002_integrity_privacy/migration.sql",
-    "utf8",
-  ),
-);
-const server = new PGLiteSocketServer({
-  db: pg,
-  port: 55667,
-  host: "127.0.0.1",
-  maxConnections: 30,
-});
-await server.start();
+const database = await testDatabase(55667);
+process.env.DATABASE_URL = database.url;
 const { db } = await import("../src/server/db");
 const { runJobs } = await import("../src/server/jobs");
 const child = spawn(
@@ -434,7 +415,7 @@ try {
     JSON.stringify(
       {
         date: new Date().toISOString(),
-        engine: "Next.js production server + PostgreSQL WASM/PGlite over TCP",
+        engine: "Next.js production server + " + database.engine,
         checks: evidence,
         limitations: [
           "HTTP and SSR checks; browser interaction and assistive technology checks are recorded separately.",
@@ -454,7 +435,6 @@ try {
   child.kill("SIGTERM");
   await new Promise((r) => child.once("exit", r));
   await db.$disconnect();
-  await server.stop();
-  await pg.close();
+  await database.close();
   await new Promise<void>((resolve) => scanner.close(() => resolve()));
 }

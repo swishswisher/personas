@@ -119,7 +119,7 @@ export function AuthScreen({
           </Link>
         </header>
       </div>
-      <main id="main" className="auth">
+      <main tabIndex={-1} id="main" className="auth">
         <aside className="auth-visual stack">
           <div className="eyebrow">Research into understanding</div>
           <h1 className="serif">

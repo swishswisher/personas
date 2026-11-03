@@ -18,6 +18,9 @@ export async function workspaceData(
   } = {},
 ) {
   const m = await workspaceAccess(actor, workspaceId);
+  const retentionReviewBefore = new Date(
+    Date.now() - m.workspace.retentionDays * 86400000,
+  );
   const projects = await db.project.findMany({
     where: {
       workspaceId,
@@ -96,6 +99,16 @@ export async function workspaceData(
     }),
     db.researchSource.count({ where: sourceWhere }),
     db.persona.count({ where: personaWhere }),
+    db.researchSource.count({
+      where: {
+        workspaceId,
+        projectId: { in: research },
+        deletedAt: null,
+        createdAt: {
+          lte: retentionReviewBefore,
+        },
+      },
+    }),
   ]);
   const [
     sources,
@@ -265,6 +278,7 @@ export async function workspaceData(
     participants,
     sourceMatches,
     personaMatches,
+    retentionDue,
   ] = await countsPromise;
   const linkedIds = options.personaId
     ? personas.flatMap((p) =>
@@ -293,6 +307,7 @@ export async function workspaceData(
       demo: m.workspace.demo,
       aiEnabled: m.workspace.aiEnabled,
       retentionDays: m.workspace.retentionDays,
+      retentionReviewBefore,
     },
     role: m.role,
     pagination: { page, sourceMatches, personaMatches },
@@ -302,6 +317,7 @@ export async function workspaceData(
       review: reviewCount,
       snapshots: snapshotCount,
       participants: participants.length,
+      retentionDue,
     },
     projects,
     selectedProject: selected?.id || null,

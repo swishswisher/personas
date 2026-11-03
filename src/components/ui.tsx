@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useId } from "react";
 import type {
   ReactNode,
   InputHTMLAttributes,
@@ -133,14 +134,20 @@ export function Field({
   hint,
   ...props
 }: InputHTMLAttributes<HTMLInputElement> & { label: string; hint?: string }) {
+  const generatedId = useId();
+  const id = props.id || generatedId;
+  const describedBy =
+    [props["aria-describedby"], hint ? id + "-hint" : null]
+      .filter(Boolean)
+      .join(" ") || undefined;
   return (
     <div className="field">
-      <label htmlFor={props.id || props.name}>
+      <label htmlFor={id}>
         {label}
-        {props.required ? " *" : ""}
+        {props.required && <span aria-hidden="true"> *</span>}
       </label>
-      <input {...props} id={props.id || props.name} />
-      {hint && <small>{hint}</small>}
+      <input {...props} id={id} aria-describedby={describedBy} />
+      {hint && <small id={id + "-hint"}>{hint}</small>}
     </div>
   );
 }
@@ -152,14 +159,20 @@ export function Area({
   label: string;
   hint?: string;
 }) {
+  const generatedId = useId();
+  const id = props.id || generatedId;
+  const describedBy =
+    [props["aria-describedby"], hint ? id + "-hint" : null]
+      .filter(Boolean)
+      .join(" ") || undefined;
   return (
     <div className="field">
-      <label htmlFor={props.id || props.name}>
+      <label htmlFor={id}>
         {label}
-        {props.required ? " *" : ""}
+        {props.required && <span aria-hidden="true"> *</span>}
       </label>
-      <textarea {...props} id={props.id || props.name} />
-      {hint && <small>{hint}</small>}
+      <textarea {...props} id={id} aria-describedby={describedBy} />
+      {hint && <small id={id + "-hint"}>{hint}</small>}
     </div>
   );
 }

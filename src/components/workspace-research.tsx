@@ -55,6 +55,14 @@ export function ResearchView({
           </ButtonLink>
         )}
       </PageTitle>
+      {c.data.counts.retentionDue > 0 && (
+        <Notice tone="amber">
+          {c.data.counts.retentionDue} sources have reached your{" "}
+          {c.data.workspace.retentionDays}-day research review interval. Review
+          consent and relevance, then remove or redact records that should no
+          longer be retained. Saved evidence is never silently deleted.
+        </Notice>
+      )}
       <form
         className="toolbar"
         onSubmit={(e) => {
@@ -119,6 +127,10 @@ export function ResearchView({
               </div>
               <div className="stack sm">
                 <Pill>{s.classification}</Pill>
+                {new Date(s.createdAt).getTime() <=
+                  new Date(
+                    c.data.workspace.retentionReviewBefore,
+                  ).getTime() && <Pill tone="amber">Retention review due</Pill>}
                 <Pill
                   tone={
                     s.status === "failed"
@@ -528,7 +540,7 @@ function SourceDetail({ ctx: c, id }: { ctx: WorkspaceContext; id: string }) {
               onClick={() => {
                 if (
                   !confirm(
-                    "Privacy redaction removes this source and every associated persona revision, revokes affected shares, and invalidates exports. Existing downloaded copies cannot be recalled. Continue?",
+                    "Privacy redaction removes this source, associated persona revisions, and linked journeys or briefs; revokes affected shares; and invalidates exports. Existing downloaded copies cannot be recalled. Continue?",
                   )
                 )
                   return;

@@ -19,10 +19,10 @@ const result = {
   remoteWorkflowFiles: [],
   localWorkflowFiles: [],
   repositoryRulesets:
-    "No rulesets returned by the read-only GitHub rulesets API during release preparation",
+    "Not checked by this script; inspect repository and organization rules before publication.",
   actionsUsed: false,
   decision:
-    "Safe to push this implementation branch: no workflow files on either side.",
+    "No workflow files found on the inspected base or checkout. Keep commits local; this check does not authorize a push or verify organization rules.",
 };
 mkdirSync("docs/evidence", { recursive: true });
 writeFileSync(

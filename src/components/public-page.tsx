@@ -171,7 +171,7 @@ export function PublicPage({
   return (
     <>
       <PublicHeader />
-      <main id="main" className="marketing">
+      <main tabIndex={-1} id="main" className="marketing">
         {isHome ? (
           <>
             <section className="hero">

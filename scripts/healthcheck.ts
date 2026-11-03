@@ -12,7 +12,10 @@ const result = {
   billing:
     !!process.env.STRIPE_SECRET_KEY && !!process.env.STRIPE_WEBHOOK_SECRET,
   workerAuthentication: !!process.env.CRON_SECRET,
+  scanner: !!(process.env.UPLOAD_SCAN_URL && process.env.UPLOAD_SCAN_TOKEN),
 };
 console.log(JSON.stringify(result, null, 2));
 await db.$disconnect();
-if (Object.values(result).some((v) => !v)) process.exitCode = 1;
+// Optional AI must not make an otherwise configured manual service unhealthy.
+if (Object.entries(result).some(([key, value]) => key !== "ai" && !value))
+  process.exitCode = 1;

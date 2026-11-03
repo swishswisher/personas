@@ -1,0 +1,15 @@
+{
+  "date": "2026-11-03T06:00:11.987Z",
+  "engine": "PostgreSQL 17 native, official postgres:17-bookworm container",
+  "checks": [
+    "Native fixture persisted evidence, immutable revision, approval, share and private PDF",
+    "Repository pg_dump/pg_restore runbooks restored a fresh native PostgreSQL database",
+    "Repeat restore refused its nonempty target",
+    "Private source and export objects restored byte-for-byte from isolated copies",
+    "Restored runtime verified access denial, evidence, history, immutable revision, share and private files"
+  ],
+  "limitations": [
+    "Isolated local fixture and local private objects, not customer data, encrypted offsite storage or managed-provider PITR.",
+    "Native Prisma migrate deploy remains blocked by the engine-download policy; committed SQL migrations were applied to disposable databases."
+  ]
+}

@@ -1,7 +1,7 @@
 import { Logo, ButtonLink } from "@/components/ui";
 export default function NotFound() {
   return (
-    <main id="main" className="not-found stack">
+    <main tabIndex={-1} id="main" className="not-found stack">
       <Logo />
       <div className="eyebrow">404 · A missing piece</div>
       <h1 className="serif">This page isn’t here.</h1>

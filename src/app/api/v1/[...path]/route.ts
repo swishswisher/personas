@@ -80,7 +80,8 @@ async function handle(request: Request, context: Context) {
       "session_expired",
       "Sign in with a verified account to continue.",
     );
-    await rateLimit(actor.id, post ? 90 : 180);
+    // Reading the workspace must not consume the separate mutation allowance.
+    await rateLimit(`${post ? "write" : "read"}:${actor.id}`, post ? 90 : 180);
     if (path[0] === "me")
       return json({
         user: { id: actor.id, name: actor.name, email: actor.email },

@@ -54,7 +54,7 @@ export function SharedSnapshot({ token }: { token: string }) {
     };
   }, [token]);
   return (
-    <main id="main" className="public-share stack">
+    <main tabIndex={-1} id="main" className="public-share stack">
       <header className="row between">
         <Logo />
         <Pill tone="">Approved snapshot</Pill>
