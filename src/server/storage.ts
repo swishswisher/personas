@@ -7,7 +7,21 @@ import {
 import { mkdir, writeFile, readFile, unlink } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
 import { ensure } from "@/lib/domain";
+import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { db } from "./db";
 const isS3 = () => process.env.FILE_STORAGE === "s3";
+const isDatabase = () => process.env.FILE_STORAGE === "database";
+function encryptionKey() {
+  const encoded = process.env.FILE_ENCRYPTION_KEY || "";
+  const key = Buffer.from(encoded, "base64");
+  ensure(
+    key.length === 32 && key.toString("base64") === encoded,
+    503,
+    "storage_config",
+    "Configure a stable 32-byte base64 private-storage encryption key.",
+  );
+  return key;
+}
 const s3 = () =>
   new S3Client({
     region: process.env.S3_REGION || "us-east-1",
@@ -40,7 +54,31 @@ function localPath(key: string) {
   return path;
 }
 export async function putFile(key: string, body: Uint8Array, mime: string) {
-  if (isS3()) {
+  if (isDatabase()) {
+    ensure(
+      body.length > 0 && body.length <= 12 * 1024 * 1024,
+      413,
+      "storage_size",
+      "This private object exceeds the storage limit.",
+    );
+    const iv = randomBytes(12);
+    const cipher = createCipheriv("aes-256-gcm", encryptionKey(), iv);
+    // Authenticate the identifier so ciphertext cannot be swapped between keys.
+    cipher.setAAD(Buffer.from(key));
+    const ciphertext = Buffer.concat([cipher.update(body), cipher.final()]);
+    const data = {
+      ciphertext,
+      iv,
+      tag: cipher.getAuthTag(),
+      mime,
+      bytes: body.length,
+    };
+    await db.privateObject.upsert({
+      where: { key },
+      create: { key, ...data },
+      update: data,
+    });
+  } else if (isS3()) {
     ensure(
       process.env.S3_BUCKET,
       503,
@@ -70,6 +108,32 @@ export async function putFile(key: string, body: Uint8Array, mime: string) {
   }
 }
 export async function getFile(key: string) {
+  if (isDatabase()) {
+    const object = await db.privateObject.findUnique({ where: { key } });
+    ensure(
+      object,
+      404,
+      "file_unavailable",
+      "This private object is unavailable.",
+    );
+    try {
+      const decipher = createDecipheriv(
+        "aes-256-gcm",
+        encryptionKey(),
+        object.iv,
+      );
+      decipher.setAAD(Buffer.from(key));
+      decipher.setAuthTag(object.tag);
+      return Buffer.concat([
+        decipher.update(object.ciphertext),
+        decipher.final(),
+      ]);
+    } catch {
+      throw new Error(
+        "Private storage could not authenticate this object. Check the encryption-key binding.",
+      );
+    }
+  }
   if (isS3()) {
     const result = await s3().send(
       new GetObjectCommand({ Bucket: process.env.S3_BUCKET, Key: key }),
@@ -79,7 +143,8 @@ export async function getFile(key: string) {
   return readFile(/* turbopackIgnore: true */ localPath(key));
 }
 export async function deleteFile(key: string) {
-  if (isS3())
+  if (isDatabase()) await db.privateObject.deleteMany({ where: { key } });
+  else if (isS3())
     await s3().send(
       new DeleteObjectCommand({ Bucket: process.env.S3_BUCKET, Key: key }),
     );

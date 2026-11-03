@@ -6,7 +6,10 @@ import { readFile, readdir } from "node:fs/promises";
 
 // Test-only opt-in. Never fall back to a configured application DATABASE_URL.
 // Native runs create and remove their own random database on a local test server.
-export async function testDatabase(port: number) {
+export async function testDatabase(
+  port: number,
+  options: { migrate?: boolean } = {},
+) {
   const native = process.env.PERSONAS_NATIVE_TEST_URL;
   const migrations = (
     await readdir("prisma/migrations", { withFileTypes: true })
@@ -31,7 +34,7 @@ export async function testDatabase(port: number) {
     const client = new Client({ connectionString: url.toString() });
     try {
       await client.connect();
-      for (const migration of migrations)
+      for (const migration of options.migrate === false ? [] : migrations)
         await client.query(
           await readFile(
             `prisma/migrations/${migration}/migration.sql`,
@@ -56,7 +59,7 @@ export async function testDatabase(port: number) {
     };
   }
   const pg = await PGlite.create();
-  for (const migration of migrations)
+  for (const migration of options.migrate === false ? [] : migrations)
     await pg.exec(
       await readFile(`prisma/migrations/${migration}/migration.sql`, "utf8"),
     );

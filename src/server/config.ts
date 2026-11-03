@@ -25,3 +25,9 @@ export function emailReady() {
     localEmailCapture()
   );
 }
+export function googleReady() {
+  return !!(
+    process.env.GOOGLE_CLIENT_ID?.trim() &&
+    process.env.GOOGLE_CLIENT_SECRET?.trim()
+  );
+}

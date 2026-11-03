@@ -135,7 +135,8 @@ async function extractSource(sourceId: string) {
     data: { text, status: "ready", failure: null },
   });
 }
-export async function runJobs(limit = 10) {
+export async function runJobs(limit = 10, options: { budgetMs?: number } = {}) {
+  const started = Date.now();
   await db.job.updateMany({
     where: {
       status: "processing",
@@ -157,6 +158,11 @@ export async function runJobs(limit = 10) {
   });
   let completed = 0;
   for (let i = 0; i < limit; i++) {
+    if (
+      options.budgetMs !== undefined &&
+      Date.now() - started >= options.budgetMs
+    )
+      break;
     const lock = randomUUID();
     const rows = await db.$queryRaw<
       { id: string }[]

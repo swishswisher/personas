@@ -44,6 +44,8 @@ beforeAll(async () => {
   process.env.BETTER_AUTH_SECRET =
     "integration-only-strong-secret-01234567890123456789";
   process.env.LOCAL_EMAIL_CAPTURE = "true";
+  process.env.GOOGLE_CLIENT_ID = "google-fixture.apps.googleusercontent.com";
+  process.env.GOOGLE_CLIENT_SECRET = "google-fixture-not-a-real-secret";
   process.env.FILE_STORAGE = "local";
   process.env.LOCAL_STORAGE_DIR = ".data/integration-files";
   ({ db } = await import("../src/server/db"));
@@ -581,6 +583,54 @@ describe("billing retries and ordering", () => {
   });
 });
 describe("authentication persistence and recovery", () => {
+  it("starts Google OAuth with state/PKCE, safe redirects and no fabricated account", async () => {
+    const { auth } = await import("../src/server/auth");
+    const count = await db.user.count();
+    const response = await auth.handler(
+      new Request("http://localhost:3100/api/auth/sign-in/social", {
+        method: "POST",
+        headers: {
+          origin: "http://localhost:3100",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          provider: "google",
+          callbackURL: "/app",
+          disableRedirect: true,
+        }),
+      }),
+    );
+    expect(response.status).toBe(200);
+    const result = await response.json();
+    const url = new URL(result.url);
+    expect(url.hostname).toBe("accounts.google.com");
+    expect(url.searchParams.get("redirect_uri")).toBe(
+      "http://localhost:3100/api/auth/callback/google",
+    );
+    expect(url.searchParams.get("state")).toBeTruthy();
+    expect(url.searchParams.get("code_challenge_method")).toBe("S256");
+    expect(url.searchParams.get("scope")?.split(" ").sort()).toEqual([
+      "email",
+      "openid",
+      "profile",
+    ]);
+    const unsafe = await auth.handler(
+      new Request("http://localhost:3100/api/auth/sign-in/social", {
+        method: "POST",
+        headers: {
+          origin: "http://localhost:3100",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          provider: "google",
+          callbackURL: "https://evil.example",
+          disableRedirect: true,
+        }),
+      }),
+    );
+    expect(unsafe.status).toBeGreaterThanOrEqual(400);
+    expect(await db.user.count()).toBe(count);
+  });
   it("registers, verifies, signs in, reads a new session and signs out", async () => {
     const { auth } = await import("../src/server/auth");
     const origin = "http://localhost:3100";
@@ -929,6 +979,46 @@ describe("additional integrity and recovery paths", () => {
 });
 
 describe("upload and queue recovery", () => {
+  it("persists authenticated encrypted private objects, detects tampering and deletes them", async () => {
+    const previousStorage = process.env.FILE_STORAGE;
+    const previousKey = process.env.FILE_ENCRYPTION_KEY;
+    const { randomBytes } = await import("node:crypto");
+    const { putFile, getFile, deleteFile } =
+      await import("../src/server/storage");
+    process.env.FILE_STORAGE = "database";
+    process.env.FILE_ENCRYPTION_KEY = randomBytes(32).toString("base64");
+    const key = "research/encrypted-fixture";
+    try {
+      const body = Buffer.from("A confidential database-backed private file.");
+      await putFile(key, body, "text/plain");
+      expect(await getFile(key)).toEqual(body);
+      const object = await db.privateObject.findUniqueOrThrow({
+        where: { key },
+      });
+      expect(Buffer.from(object.ciphertext).includes(body)).toBe(false);
+      const altered = Buffer.from(object.ciphertext);
+      altered[0] ^= 1;
+      await db.privateObject.update({
+        where: { key },
+        data: { ciphertext: altered },
+      });
+      await expect(getFile(key)).rejects.toThrow("authenticate");
+      await putFile(key, body, "text/plain");
+      await db.privateObject.create({
+        data: { ...object, key: "research/swapped-fixture" },
+      });
+      await expect(getFile("research/swapped-fixture")).rejects.toThrow(
+        "authenticate",
+      );
+      await deleteFile(key);
+      await deleteFile("research/swapped-fixture");
+      expect(await db.privateObject.count()).toBe(0);
+    } finally {
+      process.env.FILE_STORAGE = previousStorage;
+      if (previousKey === undefined) delete process.env.FILE_ENCRYPTION_KEY;
+      else process.env.FILE_ENCRYPTION_KEY = previousKey;
+    }
+  });
   it("claims a queued job once across parallel workers and dead-letters an expired final lease", async () => {
     const job = await db.job.create({
       data: {

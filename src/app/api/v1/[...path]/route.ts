@@ -4,7 +4,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/server/db";
 import { requestActor } from "@/server/auth";
-import { ensure, AppError } from "@/lib/domain";
+import { ensure, AppError, MAX_UPLOAD_BYTES } from "@/lib/domain";
+import { scheduleJobs } from "@/server/job-wakeup";
 import {
   sameOrigin,
   rateLimit,
@@ -179,20 +180,21 @@ async function handle(request: Request, context: Context) {
       return json(await invoices(actor, workspaceId));
     if (path[2] === "upload" && post) {
       ensure(
-        Number(request.headers.get("content-length") || 0) <= 11 * 1024 * 1024,
+        Number(request.headers.get("content-length") || 0) <=
+          MAX_UPLOAD_BYTES + 256 * 1024,
         413,
         "upload_size",
-        "Upload a file smaller than 10 MB.",
+        "Upload a file smaller than 4 MB.",
       );
       const data = await request.formData();
       const projectId = z.string().min(1).parse(data.get("projectId"));
       await projectAccess(actor, workspaceId, projectId, "editor", true);
       const file = data.get("file");
       ensure(
-        file instanceof File && file.size > 0 && file.size <= 10 * 1024 * 1024,
+        file instanceof File && file.size > 0 && file.size <= MAX_UPLOAD_BYTES,
         413,
         "upload_size",
-        "Upload a file between 1 byte and 10 MB.",
+        "Upload a file between 1 byte and 4 MB.",
       );
       const ext = file.name.split(".").pop()?.toLowerCase();
       const mime =
@@ -368,4 +370,8 @@ function json(value: unknown, status = 200) {
   });
 }
 export const GET = handle;
-export const POST = handle;
+export async function POST(request: Request, context: Context) {
+  const response = await handle(request, context);
+  if (response.ok) scheduleJobs();
+  return response;
+}

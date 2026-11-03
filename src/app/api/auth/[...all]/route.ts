@@ -1,6 +1,8 @@
 import { auth } from "@/server/auth";
 import { toNextJsHandler } from "better-auth/next-js";
 import { emailReady } from "@/server/config";
+import { scheduleJobs } from "@/server/job-wakeup";
+export const maxDuration = 90;
 const handlers = toNextJsHandler(auth);
 export const GET = handlers.GET;
 export async function POST(request: Request) {
@@ -18,5 +20,7 @@ export async function POST(request: Request) {
       },
       { status: 503 },
     );
-  return handlers.POST(request);
+  const response = await handlers.POST(request);
+  if (response.ok) scheduleJobs();
+  return response;
 }

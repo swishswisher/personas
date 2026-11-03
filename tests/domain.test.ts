@@ -5,7 +5,9 @@ import {
   csvCell,
   snapshotCsv,
   safeNext,
+  plans,
 } from "../src/lib/domain";
+import { validateCheckoutPrice } from "../src/server/subscriptions";
 import { hashPassphrase, checkPassphrase } from "../src/server/security";
 import { verifyCitations } from "../src/server/ai";
 const content = personaContent.parse({
@@ -122,5 +124,52 @@ describe("safe publishing output", () => {
     expect(safeNext("//evil.example")).toBe("/app");
     expect(safeNext("/app/personas")).toBe("/app/personas");
     expect(safeNext("/\\evil")).toBe("/app");
+  });
+});
+describe("affordable pricing and checkout consistency", () => {
+  const price = {
+    active: true,
+    currency: "usd",
+    unit_amount: 500,
+    type: "recurring",
+    recurring: {
+      interval: "month",
+      interval_count: 1,
+      usage_type: "licensed",
+      trial_period_days: null,
+      meter: null,
+    },
+  } as const;
+  it("accepts the approved monthly amounts and rejects stale Stripe prices", () => {
+    expect([
+      plans.free.price,
+      plans.starter.price,
+      plans.team.price,
+      plans.agency.price,
+    ]).toEqual([0, 5, 15, 39]);
+    for (const plan of ["starter", "team", "agency"] as const)
+      expect(() =>
+        validateCheckoutPrice(plan, {
+          ...price,
+          unit_amount: plans[plan].price * 100,
+        }),
+      ).not.toThrow();
+    expect(() =>
+      validateCheckoutPrice("starter", { ...price, unit_amount: 1900 }),
+    ).toThrow("No payment");
+  });
+  it("rejects annual, inactive, foreign-currency or metered prices", () => {
+    for (const input of [
+      { ...price, active: false },
+      { ...price, currency: "eur" },
+      { ...price, recurring: { ...price.recurring, interval_count: 12 } },
+      {
+        ...price,
+        recurring: { ...price.recurring, usage_type: "metered" as const },
+      },
+    ])
+      expect(() => validateCheckoutPrice("starter", input)).toThrow(
+        "billing price",
+      );
   });
 });

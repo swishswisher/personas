@@ -7,8 +7,10 @@ import { safeNext } from "@/lib/domain";
 import { Logo, Field, Notice, Icon, ButtonLink, Portrait } from "./ui";
 export function AuthScreen({
   mode,
+  googleEnabled = false,
 }: {
   mode: "login" | "signup" | "reset" | "verify" | "invite" | "onboarding";
+  googleEnabled?: boolean;
 }) {
   const search = useSearchParams(),
     router = useRouter();
@@ -25,6 +27,26 @@ export function AuthScreen({
     invite: "Your team saved you a seat.",
     onboarding: "Make space for your research.",
   };
+  async function googleSignIn() {
+    setBusy(true);
+    setError("");
+    try {
+      const result = await authClient.signIn.social({
+        provider: "google",
+        callbackURL: safeNext(search.get("next")),
+        errorCallbackURL: "/login?error=google",
+      });
+      if (result.error) throw new Error(result.error.message);
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Google sign-in is unavailable. Try email instead.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);
@@ -154,6 +176,38 @@ export function AuthScreen({
                       : "Pick up where your research left off."}
             </p>
           </div>
+          {search.get("error") === "google" && (
+            <Notice tone="red">
+              Google sign-in could not be completed. Try again or sign in with
+              email.
+            </Notice>
+          )}
+          {googleEnabled && ["login", "signup"].includes(mode) && (
+            <div className="stack sm">
+              <button
+                className="btn"
+                type="button"
+                disabled={busy}
+                onClick={() => void googleSignIn()}
+              >
+                Continue with Google
+              </button>
+              <p className="small center">Or continue with email</p>
+              {mode === "signup" && (
+                <p className="small">
+                  By continuing with Google, you agree to the{" "}
+                  <Link href="/terms" className="text-link">
+                    terms
+                  </Link>{" "}
+                  and{" "}
+                  <Link href="/privacy" className="text-link">
+                    privacy information
+                  </Link>
+                  .
+                </p>
+              )}
+            </div>
+          )}
           <form className="stack" onSubmit={submit}>
             {mode === "signup" && (
               <Field

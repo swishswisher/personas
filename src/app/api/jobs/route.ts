@@ -1,6 +1,6 @@
 import { runJobs } from "@/server/jobs";
 import { timingSafeEqual } from "node:crypto";
-export const maxDuration = 60;
+export const maxDuration = 90;
 export async function GET(request: Request) {
   const actual = Buffer.from(request.headers.get("authorization") || ""),
     expected = Buffer.from(`Bearer ${process.env.CRON_SECRET || ""}`);
@@ -10,5 +10,5 @@ export async function GET(request: Request) {
     !timingSafeEqual(actual, expected)
   )
     return Response.json({ error: "Unauthorized" }, { status: 401 });
-  return Response.json(await runJobs(10));
+  return Response.json(await runJobs(5, { budgetMs: 20000 }));
 }

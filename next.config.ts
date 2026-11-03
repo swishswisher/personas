@@ -3,7 +3,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   serverExternalPackages: ["pg", "pdf-parse"],
   outputFileTracingIncludes: {
-    "/api/jobs": [
+    "/api/**": [
       "./node_modules/pdfjs-dist/legacy/build/*.mjs",
       "./node_modules/@napi-rs/canvas*/**/*",
     ],

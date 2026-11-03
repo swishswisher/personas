@@ -1,4 +1,6 @@
 import { z } from "zod";
+// Leave room for multipart framing below Vercel's 4.5 MB request limit.
+export const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 export const roleSchema = z.enum(["owner", "editor", "viewer"]);
 export type Role = z.infer<typeof roleSchema>;
 export const classification = z.enum([
@@ -35,29 +37,29 @@ export const plans = {
   },
   starter: {
     name: "Starter",
-    price: 19,
+    price: 5,
     seats: 1,
     projects: 10,
     personas: 50,
-    ai: 50,
+    ai: 10,
     storageMB: 1024,
   },
   team: {
     name: "Team",
-    price: 69,
+    price: 15,
     seats: 5,
     projects: 50,
     personas: 500,
-    ai: 300,
+    ai: 60,
     storageMB: 5120,
   },
   agency: {
     name: "Agency",
-    price: 179,
+    price: 39,
     seats: 10,
     projects: 200,
     personas: 2000,
-    ai: 1000,
+    ai: 200,
     storageMB: 20480,
   },
 } as const;

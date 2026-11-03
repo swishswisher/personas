@@ -3,6 +3,7 @@ import { PublicPage, publicPaths } from "@/components/public-page";
 import { AuthScreen } from "@/components/auth-screen";
 import { db } from "@/server/db";
 import { Suspense } from "react";
+import { googleReady } from "@/server/config";
 export const dynamic = "force-dynamic";
 export default async function Page({
   params,
@@ -18,6 +19,7 @@ export default async function Page({
     return (
       <Suspense>
         <AuthScreen
+          googleEnabled={googleReady()}
           mode={
             path as
               "login" | "signup" | "reset" | "verify" | "invite" | "onboarding"

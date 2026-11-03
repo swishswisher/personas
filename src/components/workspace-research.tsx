@@ -2,7 +2,7 @@
 import { useSearchParams } from "next/navigation";
 import { useState, useEffect } from "react";
 import { api } from "@/lib/client-api";
-import { canEdit } from "@/lib/domain";
+import { canEdit, MAX_UPLOAD_BYTES } from "@/lib/domain";
 import type { WorkspaceContext } from "./workspace";
 import { Form, PageControls } from "./workspace-shared";
 import {
@@ -287,6 +287,11 @@ function NewSource({ ctx: c }: { ctx: WorkspaceContext }) {
                 const form = new FormData(e.currentTarget);
                 form.set("projectId", c.projectId);
                 try {
+                  const file = form.get("file");
+                  if (file instanceof File && file.size > MAX_UPLOAD_BYTES)
+                    throw new Error(
+                      "Choose a research file no larger than 4 MB.",
+                    );
                   const r = await fetch(
                     `/api/v1/workspaces/${c.workspaceId}/upload`,
                     { method: "POST", body: form },
@@ -306,7 +311,7 @@ function NewSource({ ctx: c }: { ctx: WorkspaceContext }) {
               <div className="dropzone stack">
                 <Icon name="upload" />
                 <h3>Make room for the original.</h3>
-                <p>PDF, TXT, MD, or CSV · up to 10 MB</p>
+                <p>PDF, TXT, MD, or CSV · up to 4 MB</p>
                 <Field
                   label="Research file"
                   name="file"

@@ -8,13 +8,13 @@
   },
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1 --port 3100",
-    "build": "prisma generate && next build",
+    "build": "npm run db:generate && next build",
     "start": "next start --hostname 0.0.0.0 --port 3100",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:integration": "vitest run tests/integration.test.ts",
-    "db:generate": "prisma generate",
+    "db:generate": "node scripts/generate-client.mjs",
     "db:migrate": "prisma migrate deploy",
     "db:local": "node --import tsx scripts/local-db.ts",
     "db:seed": "node --import tsx scripts/seed.ts",
@@ -24,7 +24,10 @@
     "test:e2e": "npm run build && node --import tsx scripts/http-e2e.ts",
     "release:check-actions": "node scripts/check-actions.mjs",
     "healthcheck": "node --import tsx scripts/healthcheck.ts",
-    "format:check": "prettier --check src scripts tests docs README.md"
+    "format:check": "prettier --check src scripts tests docs README.md",
+    "db:migrate:sql": "node --import tsx scripts/migrate-sql.ts",
+    "setup:env": "node scripts/prepare-env.mjs",
+    "test:scanner": "node scripts/scanner-smoke.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "latest",
@@ -46,6 +49,8 @@
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.14",
     "@electric-sql/pglite-socket": "^0.2.17",
+    "@prisma/client-generator-ts": "7.10.1",
+    "@prisma/internals": "7.10.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^24",
     "@types/pg": "latest",

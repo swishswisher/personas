@@ -3,10 +3,29 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
 import { authDatabase, authTransaction } from "./auth-database";
 import { queueMail } from "./outbox";
+import { googleReady } from "./config";
 export const auth = betterAuth({
   appName: "Personas",
   baseURL: process.env.BETTER_AUTH_URL,
   secret: process.env.BETTER_AUTH_SECRET,
+  socialProviders: googleReady()
+    ? {
+        google: {
+          clientId: process.env.GOOGLE_CLIENT_ID!,
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+          accessType: "online",
+          includeGrantedScopes: false,
+          prompt: "select_account",
+        },
+      }
+    : {},
+  account: {
+    encryptOAuthTokens: true,
+    accountLinking: {
+      requireLocalEmailVerified: true,
+      allowDifferentEmails: false,
+    },
+  },
   database: prismaAdapter(authDatabase, {
     provider: "postgresql",
     transaction: true,
@@ -46,7 +65,11 @@ export const auth = betterAuth({
     cookieCache: { enabled: false },
   },
   rateLimit: { enabled: true, storage: "database", window: 60, max: 30 },
-  advanced: { database: { generateId: () => crypto.randomUUID() } },
+  advanced: {
+    disableOriginCheck: false,
+    disableCSRFCheck: false,
+    database: { generateId: () => crypto.randomUUID() },
+  },
   plugins: [nextCookies()],
 });
 export async function requestActor(request: Request) {

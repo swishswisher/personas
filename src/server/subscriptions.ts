@@ -22,7 +22,30 @@ export function stripe() {
     "billing_unavailable",
     "Billing is not connected yet. No payment has been taken.",
   );
-  return new Stripe(process.env.STRIPE_SECRET_KEY, { maxNetworkRetries: 2 });
+  return new Stripe(process.env.STRIPE_SECRET_KEY, {
+    maxNetworkRetries: 1,
+    timeout: 15000,
+  });
+}
+export function validateCheckoutPrice(
+  plan: Exclude<Plan, "free">,
+  price: Pick<
+    Stripe.Price,
+    "active" | "currency" | "unit_amount" | "recurring" | "type"
+  >,
+) {
+  ensure(
+    price.active &&
+      price.type === "recurring" &&
+      price.currency === "usd" &&
+      price.unit_amount === plans[plan].price * 100 &&
+      price.recurring?.interval === "month" &&
+      price.recurring.interval_count === 1 &&
+      price.recurring.usage_type === "licensed",
+    503,
+    "billing_price_mismatch",
+    "This plan's billing price needs updating. No payment has been taken.",
+  );
 }
 export async function checkout(
   actor: Actor,
@@ -52,6 +75,7 @@ export async function checkout(
     "This plan is not configured for checkout. No payment has been taken.",
   );
   const api = stripe();
+  validateCheckoutPrice(plan, await api.prices.retrieve(price));
   const session = await api.checkout.sessions.create(
     {
       mode: "subscription",
