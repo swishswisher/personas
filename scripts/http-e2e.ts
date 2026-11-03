@@ -3,7 +3,18 @@ import { writeFile, mkdir } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
+import { randomBytes } from "node:crypto";
 const origin = "http://127.0.0.1:3101";
+// A future configured environment must not send fixture emails or provider calls.
+for (const key of [
+  "RESEND_API_KEY",
+  "EMAIL_FROM",
+  "STRIPE_SECRET_KEY",
+  "AI_GATEWAY_API_KEY",
+  "GOOGLE_CLIENT_ID",
+  "GOOGLE_CLIENT_SECRET",
+])
+  delete process.env[key];
 Object.assign(process.env, {
   DATABASE_URL:
     "postgresql://postgres:postgres@127.0.0.1:55667/postgres?sslmode=disable",
@@ -12,7 +23,9 @@ Object.assign(process.env, {
   BETTER_AUTH_SECRET: "http-e2e-test-only-secret-012345678901234567890",
   LOCAL_EMAIL_CAPTURE: "true",
   ALLOW_LOCAL_STORAGE: "true",
-  FILE_STORAGE: "local",
+  FILE_STORAGE: process.env.PERSONAS_TEST_FILE_STORAGE || "local",
+  FILE_ENCRYPTION_KEY: randomBytes(32).toString("base64"),
+  JOB_EXECUTION: process.env.PERSONAS_TEST_JOB_EXECUTION || "manual",
   LOCAL_STORAGE_DIR: ".data/http-files",
   CRON_SECRET: "http-fixture-worker-secret",
   UPLOAD_SCAN_URL: "http://127.0.0.1:55668/scan",
@@ -21,9 +34,29 @@ Object.assign(process.env, {
 // Contract stub for the scanner boundary; this is not a real malware scanner.
 let scannerAccept = true;
 const scanner = createServer((request, response) => {
-  request.resume();
-  request.on("end", () => {
+  const chunks: Buffer[] = [];
+  request.on("data", (chunk) => chunks.push(chunk));
+  request.on("end", async () => {
     response.setHeader("Content-Type", "application/json");
+    if (scannerAccept && process.env.PERSONAS_REAL_SCAN_URL) {
+      try {
+        const result = await fetch(process.env.PERSONAS_REAL_SCAN_URL, {
+          method: "POST",
+          headers: {
+            Authorization: "Bearer " + process.env.PERSONAS_REAL_SCAN_TOKEN,
+            "Content-Type":
+              request.headers["content-type"] || "application/octet-stream",
+          },
+          body: Buffer.concat(chunks),
+        });
+        response.statusCode = result.status;
+        response.end(await result.text());
+      } catch {
+        response.statusCode = 503;
+        response.end(JSON.stringify({ clean: false }));
+      }
+      return;
+    }
     response.end(
       JSON.stringify({
         clean:
@@ -40,6 +73,28 @@ const database = await testDatabase(55667);
 process.env.DATABASE_URL = database.url;
 const { db } = await import("../src/server/db");
 const { runJobs } = await import("../src/server/jobs");
+async function drainJobs() {
+  if (process.env.JOB_EXECUTION !== "after") {
+    await runJobs(30);
+    return;
+  }
+  for (let i = 0; i < 100; i++) {
+    const pending = await db.job.count({
+      where: {
+        OR: [
+          { status: "processing" },
+          {
+            status: { in: ["queued", "retry"] },
+            availableAt: { lte: new Date() },
+          },
+        ],
+      },
+    });
+    if (!pending) return;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error("Post-response worker did not drain the active queue");
+}
 const child = spawn(
   process.execPath,
   [
@@ -109,6 +164,10 @@ try {
     await new Promise((r) => setTimeout(r, 500));
   }
   assert(ready, "Next.js did not start: " + logs);
+  assert.equal((await fetch(origin + "/api/health")).status, 200);
+  ok(
+    "Database/schema health endpoint responds without exposing private configuration",
+  );
   const publicPaths = [
     "/",
     "/product",
@@ -168,6 +227,16 @@ try {
   const verification = (mail.payload as { text: string }).text
     .split("\n")
     .at(-1)!;
+  if (process.env.JOB_EXECUTION === "after") {
+    await drainJobs();
+    assert.equal(
+      (await db.job.findUniqueOrThrow({ where: { id: mail.id } })).status,
+      "complete",
+    );
+    ok(
+      "Vercel-style after() delivered local verification capture without a manual worker",
+    );
+  }
   const verified = await request(verification.replace(origin, ""));
   assert([200, 302].includes(verified.status));
   await json("/api/auth/sign-in/email", { email, password });
@@ -248,7 +317,7 @@ try {
     snapshotId: published.snapshotId,
     format: "csv",
   });
-  await runJobs(30);
+  await drainJobs();
   const exported = await request(
     `/api/v1/workspaces/${workspaceId}/exports/${exportJob.id}`,
   );
@@ -276,7 +345,7 @@ try {
   );
   assert.equal(uploaded.status, 200);
   const uploadSource = await uploaded.json();
-  await runJobs(30);
+  await drainJobs();
   const extracted = await json(
     `/api/v1/workspaces/${workspaceId}/sources/${uploadSource.id}`,
   );
@@ -373,6 +442,7 @@ try {
     headers: { Authorization: "Bearer http-fixture-worker-secret" },
   });
   assert.equal(workerResponse.status, 200);
+  if (process.env.JOB_EXECUTION === "after") await drainJobs();
   const pdfExtracted = await json(
     `/api/v1/workspaces/${workspaceId}/sources/${pdfSource.id}`,
   );
@@ -404,6 +474,7 @@ try {
   await fetch(origin + "/api/jobs", {
     headers: { Authorization: "Bearer http-fixture-worker-secret" },
   });
+  if (process.env.JOB_EXECUTION === "after") await drainJobs();
   const failedSource = await json(
     `/api/v1/workspaces/${workspaceId}/sources/${rejectedSource.id}`,
   );
@@ -424,6 +495,7 @@ try {
   await fetch(origin + "/api/jobs", {
     headers: { Authorization: "Bearer http-fixture-worker-secret" },
   });
+  if (process.env.JOB_EXECUTION === "after") await drainJobs();
   assert.equal(
     (
       await json(
@@ -532,6 +604,9 @@ try {
       {
         date: new Date().toISOString(),
         engine: "Next.js production server + " + database.engine,
+        storage: process.env.FILE_STORAGE,
+        jobExecution: process.env.JOB_EXECUTION,
+        realScanner: !!process.env.PERSONAS_REAL_SCAN_URL,
         checks: evidence,
         limitations: [
           "HTTP and SSR checks; browser interaction and assistive technology checks are recorded separately.",

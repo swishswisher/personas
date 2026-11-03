@@ -1,0 +1,24 @@
+{
+  "date": "2026-11-03T07:12:38.879Z",
+  "checks": {
+    "jobs": {
+      "font": true,
+      "pdfWorker": true,
+      "canvas": true,
+      "tracedMB": 73
+    },
+    "v1/[...path]": {
+      "font": true,
+      "pdfWorker": true,
+      "canvas": true,
+      "tracedMB": 74
+    },
+    "auth/[...all]": {
+      "font": true,
+      "pdfWorker": true,
+      "canvas": true,
+      "tracedMB": 74
+    }
+  },
+  "limitation": "Local Next.js tracing inspected; no actual Vercel deployment validation is claimed."
+}

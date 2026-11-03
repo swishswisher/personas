@@ -137,6 +137,38 @@ async function extractSource(sourceId: string) {
 }
 export async function runJobs(limit = 10, options: { budgetMs?: number } = {}) {
   const started = Date.now();
+  // PostgreSQL-backed exports need a lifecycle independent of bucket policies.
+  const expired = await db.exportJob.findMany({
+    where: { expiresAt: { lte: new Date() }, fileKey: { not: null } },
+    select: { id: true, fileKey: true },
+    take: 10,
+  });
+  for (const exp of expired)
+    await db.$transaction(async (tx) => {
+      const where = {
+        id: exp.id,
+        fileKey: exp.fileKey,
+        expiresAt: { lte: new Date() },
+      };
+      const normal = await tx.exportJob.updateMany({
+        where: { ...where, status: { not: "revoked" } },
+        data: { status: "expired", fileKey: null },
+      });
+      const revoked = await tx.exportJob.updateMany({
+        where: { ...where, status: "revoked" },
+        data: { fileKey: null },
+      });
+      if (normal.count || revoked.count)
+        await tx.job.upsert({
+          where: { key: "delete:" + exp.fileKey },
+          create: {
+            key: "delete:" + exp.fileKey,
+            kind: "delete_file",
+            payload: { fileKey: exp.fileKey },
+          },
+          update: {},
+        });
+    });
   await db.job.updateMany({
     where: {
       status: "processing",

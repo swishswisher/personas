@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { Client } from "pg";
 import { testDatabase } from "./test-database";
+import { randomBytes } from "node:crypto";
 
 if (!process.env.PERSONAS_NATIVE_TEST_URL)
   throw new Error(
@@ -43,9 +44,17 @@ const admin = new Client({
   connectionString: process.env.PERSONAS_NATIVE_TEST_URL,
 });
 await admin.connect();
+for (const key of [
+  "RESEND_API_KEY",
+  "EMAIL_FROM",
+  "STRIPE_SECRET_KEY",
+  "AI_GATEWAY_API_KEY",
+])
+  delete process.env[key];
 Object.assign(process.env, {
   DATABASE_URL: database.url,
-  FILE_STORAGE: "local",
+  FILE_STORAGE: process.env.PERSONAS_TEST_FILE_STORAGE || "local",
+  FILE_ENCRYPTION_KEY: randomBytes(32).toString("base64"),
   LOCAL_STORAGE_DIR: ".data/native-recovery-files",
   LOCAL_EMAIL_CAPTURE: "true",
   APP_URL: "http://127.0.0.1:3100",
@@ -175,13 +184,20 @@ try {
   checks.push("Repeat restore refused its nonempty target");
   await deleteFile(fileKey);
   await deleteFile(exp.fileKey!);
-  await putFile(fileKey, objectBackup, "text/plain");
-  await putFile(exp.fileKey!, exportBackup, "application/pdf");
-  assert.deepEqual(await getFile(fileKey), objectBackup);
-  assert.deepEqual(await getFile(exp.fileKey!), exportBackup);
-  checks.push(
-    "Private source and export objects restored byte-for-byte from isolated copies",
-  );
+  if (process.env.FILE_STORAGE === "database") {
+    await assert.rejects(getFile(fileKey));
+    checks.push(
+      "Encrypted source/export objects retained in the restored database snapshot after deletion from the original database",
+    );
+  } else {
+    await putFile(fileKey, objectBackup, "text/plain");
+    await putFile(exp.fileKey!, exportBackup, "application/pdf");
+    assert.deepEqual(await getFile(fileKey), objectBackup);
+    assert.deepEqual(await getFile(exp.fileKey!), exportBackup);
+    checks.push(
+      "Private source and export objects restored byte-for-byte from isolated copies",
+    );
+  }
   sourceUrl.pathname = "/" + restoredName;
   const fixturePath = `.data/recovery/${databaseName}.json`;
   await mkdir(".data/recovery", { recursive: true });
@@ -216,6 +232,7 @@ try {
       {
         date: new Date().toISOString(),
         engine: "PostgreSQL 17 native, official postgres:17-bookworm container",
+        storage: process.env.FILE_STORAGE,
         checks,
         limitations: [
           "Isolated local fixture and local private objects, not customer data, encrypted offsite storage or managed-provider PITR.",

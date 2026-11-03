@@ -1,74 +1,52 @@
-# Personas recovery status
+# Personas status
 
-## Current result
+## Current objective and source
 
-The recovered service and Peach & Lilac design are implemented and locally verified. It is **not cleared for customer launch**: this environment has no configured hosting/provider credentials, and policy blocks the existing preview and Prisma native-engine host. Recovery validation left the existing production site untouched. The user subsequently authorized pushing the completed branch and merging into the default branch, `master`; connected hosting may deploy that merge. Provider readiness remains unverified.
+The user requested a ready Vercel/Neon service with owner-supplied Google/email credentials and approved much lower prices. The original recovered implementation was merged into master at `0a6e901`. This follow-up is on `master`; feature commit `cee2305` records the main changes, followed by verification/setup refinements. Publication is authorized. No GitHub Actions are permitted or used.
 
-## Source and ownership
+## Implemented and verified locally
 
-- Branch: `build/complete-personas-peach-lilac`.
-- Recovery source: `9f19e6b329496c76754337c0ad151c57d032c84b`.
-- Fetched origin; both the branch and draft PR #1 matched the source at the start and final remote recheck on 2026-11-03. No newer remote work was present.
-- Initial checkout was clean. Only Personas was changed. No worktrees, pushes, merges, deployments or GitHub Actions runs were used during recovery validation. Subsequent publication is explicitly authorized; GitHub Actions remain prohibited.
-- Local progress commits record the source, privacy/tenant fixes, and browser/native verification fixes. Application dependencies and lockfile are unchanged.
+- Approved monthly USD prices: Free / Starter $5 / Team $15 / Agency $39. AI successful-request allowances: 0/10/60/200. Shared website/workspace definitions; real Stripe price amount/interval/currency validation before checkout.
+- Google OAuth sign-in/button with maintained state/PKCE checks, explicit CSRF/origin validation, encrypted OAuth tokens and verified-email account-linking constraints. Real provider login awaits credentials.
+- Ignored Google/email/integration templates and safe env-file preparation. Auth, file-encryption, cron and scanner secrets are generated privately, mode 0600, without overwriting files or printing values.
+- Additive encrypted-private-object migration and PostgreSQL storage option for a fresh Vercel/Neon MVP; preserves S3/local backends. Vercel-compatible 4 MB upload limit. Expired export bytes are queued for deletion; duplicate unexpired snapshot exports are reused.
+- Post-response job wakeups for accounts, mutations and webhooks; durable queue/retry/lease behavior retained with bounded processing. Periodic idle retries still need hosting configuration.
+- Genuine ClamAV HTTP adapter and tests, including harmless EICAR detection and stale-signature refusal. Only the local scanner is running/verified; no hosted endpoint is claimed.
+- Official engine-free Prisma generation makes the **normal npm run build** work. Direct SQL migration runner validates checksums/unfinished/unknown state, uses a native session advisory lock, records compatible metadata and rolls failures back.
+- Local startup preserves .env, restricts its DB to loopback, applies migrations and starts the worker/application without native engine downloads.
 
-## Verified current results
+## Current evidence
 
-| Check                                  | Result                                                                                                                                             |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Strict TypeScript, ESLint, formatting  | Passed                                                                                                                                             |
-| Unit/integration tests on PGlite       | 62 passed                                                                                                                                          |
-| Same tests on native PostgreSQL 17     | 61 passed; PGlite-format backup test explicitly skipped                                                                                            |
-| Next.js production application build   | Passed using the matching generated Prisma client                                                                                                  |
-| Native production HTTP journey         | 61 checks passed                                                                                                                                   |
-| Real authenticated Chromium acceptance | 43 checks passed; no runtime JavaScript errors                                                                                                     |
-| Mobile layouts                         | 28 checks across 320/375/768/1280px, no horizontal document overflow                                                                               |
-| axe WCAG A/AA scans                    | Five scans, zero violations                                                                                                                        |
-| Native recovery                        | Actual dump/restore scripts, nonempty-target refusal, restored service/tenant/history/share probe and private source/PDF object restoration passed |
-| Production dependency audit            | Zero reported known vulnerabilities                                                                                                                |
-| Design checks                          | Original Peach & Lilac tokens/contrast/responsiveness/focus/reduced-motion checks passed                                                           |
-| Actions guard                          | No workflows found on fetched master or local checkout; no Actions executed; organization rules not claimed verified                               |
+| Check                                                                | Result                                                                               |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Frozen npm ci, normal generation/build, TypeScript, lint, formatting | Passed                                                                               |
+| PGlite suites                                                        | 68 passed                                                                            |
+| Native PostgreSQL 17 suites                                          | 67 passed, 1 explicitly skipped PGlite-format backup test                            |
+| Native production HTTP                                               | 63 passed, encrypted DB files + automatic jobs + real local ClamAV on accepted files |
+| Real Chromium customer/staff journeys                                | 53 passed, no runtime errors                                                         |
+| Responsive layout                                                    | 36 checks across 320/375/768/1280px, no horizontal document overflow                 |
+| axe accessibility                                                    | Five scans, zero violations                                                          |
+| Genuine ClamAV                                                       | Five checks passed                                                                   |
+| Native encrypted recovery                                            | Five checks passed                                                                   |
+| Production dependency audit                                          | Zero known vulnerabilities                                                           |
+| Local startup and health/pricing                                     | Passed                                                                               |
+| Vercel trace contents                                                | PDF worker, canvas and font included; approximately 73–74 MB                         |
 
-Browser verification covers signup/local email verification, onboarding, research/observations, manual cited authoring without AI, approval/publication/revocation, actual exports, editing/history/restore, duplication/comparison, journeys/briefs, customer support, staff replies/editorial revisions, mobile keyboard/navigation, unavailable billing, rejected uploads and session persistence. HTTP checks additionally verify cross-tenant original-file/export denial, real PDF parsing through the bundled worker, scanner-contract quarantine and retry. Provider fixtures never stand in for live delivery, malware scanning, payment or AI success.
+Google's external authorization page is a labelled boundary fixture in the browser test, not real authentication. Email uses local capture. Payments and AI were not executed. Migration concurrency is verified with independent native PostgreSQL sessions; PGlite tests repeated runs sequentially.
 
-## Changes completed
+## External blocker: public readiness is not established
 
-- Scoped restricted-project notifications/outbox mail to authorized recipients.
-- Completed privacy erasure across linked documents, observations, revisions, snapshots, notifications and pending mail; blocked revoked export resurrection.
-- Coordinated erasure/evidence validation/document writes/review/publication with workspace locks; enforced document expected versions; protected erased/revoked records from stale failure handlers.
-- Corrected obstructed desktop workspace forms caused by fixed-sidebar grid placement.
-- Fixed skip-link focus, unique label/readonly associations, required-field accessibility and described hints.
-- Added scoped overdue-research retention review, parallel-worker/expired-lease regressions and separate API read/write rate buckets.
-- Made AI optional in readiness checks and included scanner configuration. Removed historical organization-rule/push-safety claims from the release guard.
-- Added repeatable native test, real browser, logical recovery and restored-service probes, plus current evidence and launch instructions.
+No Vercel/Neon operator credential, database binding, Google/email credential, Stripe key or AI key is present in this runtime. No current hosted success, managed migration, real email delivery, Google login, payment, AI call or hosted recovery is claimed. The existing preview request was blocked by HTTP proxy policy.
 
-## Exact remaining blockers and next steps
+Cloud draft requirements were saved for VERCEL_TOKEN and NEON_API_KEY, including api.vercel.com and console.neon.tech. An authorized operator must enter values securely, review/save and publish the environment. The draft does not apply itself. Runtime access remained absent at the final presence check.
 
-The single consolidated blocker list, secure variable names and staging-only configuration steps are in `docs/LAUNCH.md`; reproducible commands and limitations are in `docs/VERIFICATION.md`.
+With access, verify/reuse the exact existing Vercel/Neon resources, apply the additive migration, bind generated runtime secrets, configure a hosted scanner and periodic queue polling, and verify the real deployed service. Owner Google/email files then finish those authentication credentials. Paid billing and AI each need their own provider configuration if enabled. It would be inaccurate to say that only Google/email files remain while hosting access and infrastructure are missing.
 
-1. Apply the saved network draft additions for `binaries.prisma.sh` and the supplied preview hostname; configure authorized Vercel/Neon staging access. No provider bindings or tools are available in this session.
-2. Configure preview database/auth URLs/secret, real email, private S3/scanner, Stripe sandbox and hosted worker/monitoring through secure environment settings; verify their real flows. AI remains optional.
-3. Verify managed/encrypted offsite and private-object recovery; complete hosted browser/assistive-technology/other-browser/load checks and business/policy decisions.
-4. The user has now authorized branch publication and merging into `master`. Verify the resulting hosting deployment and finish secure provider configuration; a Git merge alone does not establish launch readiness.
+## Handoff
 
-The normal Prisma CLI is still blocked by its native download host. Matching official Prisma 7.10.1 packages generated the engine-free TypeScript client using bundled WASM outside the checkout; the actual Next.js build passed without disabling TLS/checksums. Native local fixtures applied committed SQL directly. This does not claim native `prisma migrate deploy` or the normal blocked `npm run build` wrapper succeeded on this machine.
+- `docs/VERCEL_SETUP.md`: exact secure file/provider/runtime/migration steps.
+- `docs/LAUNCH.md`: one consolidated remaining blocker list and acceptance checklist.
+- `docs/VERIFICATION.md`: actual commands, evidence and limits.
+- `.env.google` / `.env.email` are prepared from checked-in config templates using `npm run setup:env`; never commit their values.
 
-Existing preview (historical deployment only): https://personas-git-build-complete-perso-d86431-swishswishers-projects.vercel.app . Fresh access received proxy CONNECT 403; recovery commits are not deployed there.
-
-## Publication authorization
-
-After recovery verification, the user requested pushing all changes and merging into the default branch. Native Git confirmed that `master` is the default and is an ancestor of the completed recovery branch. Neither checkout contains Actions workflows. GitHub API reads for PR/rules/Actions metadata returned Forbidden, so their current API state is not claimed verified. Publication and merge commits carry `[skip ci]` and `skip-checks: true`; no Actions workflows are added or dispatched.
-
-## Current follow-up: launch preparation and affordable pricing
-
-The user approved Free/$5 Starter/$15 Team/$39 Agency monthly pricing and requested Google sign-in/email setup as their remaining input. Work is in progress on `master` after merge `0a6e901`. Prices and lower AI allowances are centralized across public/workspace pages; Stripe checkout now validates actual recurring amount/currency so old price IDs cannot charge the former rates. Google OAuth and conditional sign-in UI are added, with regression checks underway.
-
-Preparing an optional self-contained deployment using PostgreSQL, durable private local volumes, a genuine ClamAV scanner and the worker, while preserving managed-provider adapters. No hosting/provider credentials are present. Public deployment, real Google/email, payment and AI execution cannot be claimed without the corresponding access/credentials. No GitHub Actions are authorized.
-
-### Follow-up progress
-
-User confirmed the existing **Vercel + Neon** target; a separate self-hosted stack is not the primary deployment. Added encrypted private-object storage in PostgreSQL (new additive migration), so the MVP can avoid separate S3 credentials while retaining S3 support. Added Vercel post-response queue wakeups and a 4 MB upload cap compatible with function request limits. Unattended retries still need periodic scheduling; PDF scanning still needs a reachable hosted service.
-
-Current checks: 67 tests passed on PGlite, 66 passed / one PGlite-only backup test skipped on native PostgreSQL, including OAuth state/PKCE/redirect boundaries, billing amount validation, encrypted-object tamper/swap rejection, and migration checksum/rollback checks. Native runs validate migration-lock concurrency; PGlite has one backend and tests repeated runs sequentially. Five **real ClamAV** checks passed, including clean text, harmless EICAR detection, authorization and stale-signature failure. Local scanner uses bundled signatures, not a fabricated clean response.
-
-Saved cloud draft requirements for VERCEL_TOKEN and NEON_API_KEY with api.vercel.com/console.neon.tech destinations. No values or runtime access have been supplied. Credential files generated by setup:env are ignored, mode 0600, preserve existing files and never print secret values. Runtime auth/file-encryption/cron/scanner secrets can be generated without asking the user to invent them.
+The task stays within Personas. Existing user files and credential values were preserved. Any source push remains separate from Vercel deployment/hosted verification; no Actions workflow may be created or dispatched.

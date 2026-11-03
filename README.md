@@ -25,7 +25,7 @@ Development emails are captured privately under `.data/mail` only when `LOCAL_EM
 ## What works
 
 - Public product, solutions, methodology, fictional examples, resources, pricing, about, privacy/terms, and persisted enquiry forms.
-- Better Auth registration, email verification, password recovery, persistent sessions, sign-out, and a private onboarding flow.
+- Better Auth registration, email verification, optional Google sign-in, password recovery, persistent sessions, sign-out, and a private onboarding flow.
 - Workspaces, scoped/restricted projects, owner/editor/viewer roles, email-bound expiring single-use invitations, seat checks, and last-owner protection.
 - Private PDF/TXT/MD/CSV uploads, asynchronous extraction, interview/survey/note records, exact Unicode source passages, observations, participant aliases, tags, search, and paginated libraries.
 - Saved manual or evidence-assisted personas, explicit finding/estimate/hypothesis/fictional labels, evidence validation, duplication, archival, comments, optimistic concurrency, immutable revisions, comparison, and restore-as-new-draft.
@@ -50,9 +50,15 @@ The tests use the same Prisma client, migrations, service modules, and Next.js p
 
 See [verification evidence](docs/VERIFICATION.md), [architecture](docs/ARCHITECTURE.md), [operations](docs/OPERATIONS.md), and [launch dependencies](docs/LAUNCH.md).
 
+## Affordable plans and credentials
+
+Monthly prices are Free, Starter **$5**, Team **$15**, Agency **$39**. Paid AI request allowances are 10 / 60 / 200. Prices and limits share one source; checkout validates the actual Stripe amount before creating a payment session. Actual payment and AI providers are optional and require their own credentials.
+
+Run `npm run setup:env -- --origin https://YOUR-REAL-APPLICATION-HOST` to prepare ignored credential files without overwriting existing values. Fill `.env.google` and `.env.email` from the checked-in `config/` templates, then securely apply the values to Vercel. Split files are not loaded by Next.js automatically. See [Vercel and Neon setup](docs/VERCEL_SETUP.md) for operator access, runtime bindings, scanner/jobs, migration and acceptance steps.
+
 ## Production configuration
 
-Set the environment variables listed in `.env.example`. Use PostgreSQL, a durable private S3-compatible bucket, a file-security scanner for PDF uploads, Resend transactional email with a verified sender, and a scheduled worker or authenticated job endpoint. Stripe prices must match the approved plans; the billing portal must allow cancellation and appropriate plan changes. Configure an explicit current structured-output-capable AI Gateway model if offering AI.
+Set the environment variables listed in `.env.example`. For the selected Vercel/Neon MVP, use PostgreSQL-backed encrypted private objects (`FILE_STORAGE=database` with a stable `FILE_ENCRYPTION_KEY`), a real file-security scanner for PDFs, Resend with a verified sender, and scheduled queue polling. S3 remains supported for existing/object-storage deployments. Stripe prices must match the approved plans; the billing portal must allow cancellation and appropriate plan changes. Configure an explicit current structured-output-capable AI Gateway model if offering AI.
 
 ```bash
 npm ci
@@ -88,4 +94,4 @@ Staff authorization is separate from workspace roles and does not automatically 
 
 Before every push or PR, run `npm run release:check-actions`. It fetches the current base branch and refuses to continue if workflow files exist on the base or implementation checkout. Inspect repository/organization rules too. If any push/PR could consume Actions minutes, keep the tested commits locally. Do not add or rerun workflows.
 
-The implementation branch is `build/complete-personas-peach-lilac`. Keep `master` and the existing production deployment intact until configuration, browser verification, and launch dependencies have been resolved.
+The recovered implementation was merged into `master` with user authorization. Further releases still require the zero-Actions guard, CI-skip markers, reviewed hosting configuration and hosted acceptance; a Git push does not establish public readiness.

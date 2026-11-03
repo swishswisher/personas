@@ -1,7 +1,9 @@
 {
-  "date": "2026-11-03T06:10:47.140Z",
+  "date": "2026-11-03T07:35:54.365Z",
   "source": "Local Next.js production server",
   "engine": "PostgreSQL 17 native",
+  "storage": "database",
+  "jobExecution": "after",
   "browser": "154.0.8037.57",
   "checks": [
     {
@@ -9,7 +11,15 @@
       "status": "passed"
     },
     {
+      "name": "Public prices are the approved $5/$15/$39 monthly amounts",
+      "status": "passed"
+    },
+    {
       "name": "Public product-to-pricing navigation",
+      "status": "passed"
+    },
+    {
+      "name": "Google browser button starts state-protected OAuth (provider boundary fixture, not a real Google login)",
       "status": "passed"
     },
     {
@@ -57,6 +67,14 @@
       "status": "passed"
     },
     {
+      "name": "320px /login horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "320px /signup horizontal layout",
+      "status": "passed"
+    },
+    {
       "name": "320px /app horizontal layout",
       "status": "passed"
     },
@@ -82,6 +100,14 @@
     },
     {
       "name": "375px /pricing horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "375px /login horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "375px /signup horizontal layout",
       "status": "passed"
     },
     {
@@ -113,6 +139,14 @@
       "status": "passed"
     },
     {
+      "name": "768px /login horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "768px /signup horizontal layout",
+      "status": "passed"
+    },
+    {
       "name": "768px /app horizontal layout",
       "status": "passed"
     },
@@ -138,6 +172,14 @@
     },
     {
       "name": "1280px /pricing horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "1280px /login horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "1280px /signup horizontal layout",
       "status": "passed"
     },
     {

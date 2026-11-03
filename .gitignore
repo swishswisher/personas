@@ -47,3 +47,4 @@ src/generated/
 !.env.example
 coverage/
 test-results/
+config/*.env

@@ -477,6 +477,17 @@ export async function command(actor: Actor, workspaceId: string, raw: unknown) {
           "export_revoked",
           "This snapshot contains redacted research. Approve a new draft before exporting.",
         );
+        const existing = await tx.exportJob.findFirst({
+          where: {
+            snapshotId: snapshot.id,
+            requestedBy: actor.id,
+            format: c.format,
+            status: { in: ["queued", "ready"] },
+            expiresAt: { gt: new Date() },
+          },
+          select: { id: true },
+        });
+        if (existing) return existing;
         const job = await tx.exportJob.create({
           data: {
             snapshotId: snapshot.id,
@@ -506,6 +517,12 @@ export async function command(actor: Actor, workspaceId: string, raw: unknown) {
       });
       ensure(exp, 404, "not_found", "Export is unavailable.");
       ensure(
+        exp.expiresAt > new Date() && exp.status !== "expired",
+        410,
+        "export_expired",
+        "This export expired. Prepare a fresh export from its approved snapshot.",
+      );
+      ensure(
         exp.status !== "revoked",
         410,
         "export_revoked",
@@ -522,7 +539,11 @@ export async function command(actor: Actor, workspaceId: string, raw: unknown) {
       await db.$transaction(async (tx) => {
         await tx.$queryRaw`SELECT id FROM "Workspace" WHERE id=${workspaceId} FOR UPDATE`;
         const changed = await tx.exportJob.updateMany({
-          where: { id: exp.id, status: { not: "revoked" } },
+          where: {
+            id: exp.id,
+            status: { notIn: ["revoked", "expired"] },
+            expiresAt: { gt: new Date() },
+          },
           data: {
             status: "queued",
             failure: null,

@@ -1,0 +1,15 @@
+{
+  "date": "2026-11-03T06:49:42.723Z",
+  "version": "ClamAV 1.5.4/28171/Sun Nov  1 06:27:34 2026",
+  "checks": [
+    "Real ClamAV signatures loaded and passed the 72-hour freshness gate",
+    "Unauthorized scan requests denied",
+    "Real engine accepted a clean text fixture",
+    "Real engine rejected the standard EICAR antivirus test fixture",
+    "Stale signatures fail closed instead of returning clean"
+  ],
+  "limitations": [
+    "Isolated local official ClamAV image with bundled signatures; no hosted scanner endpoint has been provisioned.",
+    "The local fixture disables FreshClam only during this offline check; production must keep signature updates enabled."
+  ]
+}

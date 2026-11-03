@@ -50,3 +50,7 @@ Workspace owners manage project restrictions and invitations. Invites bind a ver
 ## Zero Actions release
 
 Run all checks in the execution environment. Run `npm run release:check-actions` immediately before every push or PR, inspect current repository/organization rules, and retain changes locally if a trigger cannot be ruled out. No workflows, dispatches, reruns, or Actions-based reviews are authorized. Vercel's own preview build is separate from GitHub Actions; do not promote a preview or merge to `master` until configuration and release verification are complete.
+
+## Vercel/Neon MVP configuration follow-up
+
+See `VERCEL_SETUP.md` for the selected target and split credential files. Database private objects are an alternative to S3, not a reason to change an existing backend without migrating its files. Retain FILE_ENCRYPTION_KEY separately from backups. Native recovery verified encrypted objects within the database snapshot. `db:migrate:sql` applies committed SQL with checksum/unfinished-attempt checks, a direct-session advisory lock and transactional rollback. `JOB_EXECUTION=after` wakes active requests; periodic authenticated polling is still required. Current prices are monthly USD 5/15/39; actual Stripe price configuration and existing-subscription repricing need explicit operator handling.

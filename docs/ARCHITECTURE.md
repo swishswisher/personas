@@ -40,6 +40,10 @@ A narrowly scoped exception permits an owner-requested privacy redaction only in
 
 ## Limits and scaling
 
-Sources and personas are paginated in batches of 100 with server-side search. Dashboard counts come from database counts, not loaded-page lengths. Selected-persona evidence is fetched explicitly even when outside the recent observation window. Other operational lists are bounded for launch; large-team bulk administration and deeper archival navigation can be extended without changing tenant boundaries. File size is 10 MB and extracted source text is capped at 250,000 characters. Plan allowances and included usage are defined centrally in `lib/domain.ts`.
+Sources and personas are paginated in batches of 100 with server-side search. Dashboard counts come from database counts, not loaded-page lengths. Selected-persona evidence is fetched explicitly even when outside the recent observation window. Other operational lists are bounded for launch; large-team bulk administration and deeper archival navigation can be extended without changing tenant boundaries. File size is 4 MB (including space for multipart framing under Vercel's request limit) and extracted source text is capped at 250,000 characters. Plan allowances and included usage are defined centrally in `lib/domain.ts`.
 
 Before handling high-volume or sensitive regulated research, validate provider data-processing terms, database/application least-privilege roles, scanner isolation/resource limits, storage quotas/cost controls, and the applicable retention policy.
+
+## Vercel/Neon follow-up
+
+Optional database-backed private objects use AES-256-GCM, unique IVs and object-key authenticated data; the decryption key stays in server-only runtime configuration and must survive recovery. This avoids ephemeral serverless disk storage. Existing S3/local backends are preserved. A new additive migration creates the object table. Post-response queue wakeups improve active workflows while scheduled polling remains required for idle retries. Google OAuth uses the maintained Better Auth provider with state/PKCE, production CSRF/origin checks, encrypted OAuth tokens and verified-email linking constraints.

@@ -1,8 +1,8 @@
 {
-  "checkedAt": "2026-11-03T06:23:55.103Z",
+  "checkedAt": "2026-11-03T07:38:26.913Z",
   "repository": "swishswisher/personas",
   "baseBranch": "master",
-  "baseCommit": "444c4b7a5cdebf5bb43265fe0a47af4cf3b39ee5",
+  "baseCommit": "0a6e9010ab4c83472d449368789d70db5197a0d0",
   "remoteWorkflowFiles": [],
   "localWorkflowFiles": [],
   "repositoryRulesets": "Not checked by this script; inspect repository and organization rules before publication.",

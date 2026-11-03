@@ -37,6 +37,13 @@ let ws: string,
   shareToken: string;
 let content: PersonaContent;
 beforeAll(async () => {
+  for (const key of [
+    "RESEND_API_KEY",
+    "EMAIL_FROM",
+    "STRIPE_SECRET_KEY",
+    "AI_GATEWAY_API_KEY",
+  ])
+    delete process.env[key];
   database = await testDatabase(55666);
   process.env.DATABASE_URL = database.url;
   process.env.BETTER_AUTH_URL = "http://localhost:3100";
@@ -370,6 +377,20 @@ describe("research → draft → review → publish → export", () => {
       snapshotId,
       format: "pdf",
     });
+    const duplicates = await Promise.all([
+      command(editor, ws, {
+        action: "export.create",
+        snapshotId,
+        format: "csv",
+      }),
+      command(editor, ws, {
+        action: "export.create",
+        snapshotId,
+        format: "csv",
+      }),
+    ]);
+    expect(duplicates[0]).toEqual(duplicates[1]);
+    expect(await db.exportJob.count({ where: { snapshotId } })).toBe(2);
     await jobs.runJobs(30);
     const exports = await db.exportJob.findMany({ where: { snapshotId } });
     expect(exports.map((e) => e.status)).toEqual(["ready", "ready"]);
@@ -1013,6 +1034,28 @@ describe("upload and queue recovery", () => {
       await deleteFile(key);
       await deleteFile("research/swapped-fixture");
       expect(await db.privateObject.count()).toBe(0);
+      const expiredKey = "exports/encrypted-expiry-fixture";
+      await putFile(expiredKey, body, "text/plain");
+      const exp = await db.exportJob.create({
+        data: {
+          snapshotId,
+          requestedBy: editor.id,
+          format: "csv",
+          fileKey: expiredKey,
+          status: "ready",
+          expiresAt: new Date(0),
+        },
+      });
+      await jobs.runJobs(40);
+      const cleaned = await db.exportJob.findUniqueOrThrow({
+        where: { id: exp.id },
+      });
+      expect(cleaned.status).toBe("expired");
+      expect(cleaned.fileKey).toBeNull();
+      await expect(getFile(expiredKey)).rejects.toMatchObject({ status: 404 });
+      await expect(
+        command(editor, ws, { action: "export.retry", exportId: exp.id }),
+      ).rejects.toMatchObject({ code: "export_expired" });
     } finally {
       process.env.FILE_STORAGE = previousStorage;
       if (previousKey === undefined) delete process.env.FILE_ENCRYPTION_KEY;

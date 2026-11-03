@@ -7,6 +7,43 @@ import { testDatabase } from "../scripts/test-database";
 import { migrateSqlDatabase } from "../scripts/migrate-sql";
 
 describe("deployment SQL migration safety", () => {
+  it("applies the real application schema, integrity triggers and encrypted-object migration", async () => {
+    const database = await testDatabase(55671, { migrate: false });
+    const client = new Client({ connectionString: database.url });
+    try {
+      await client.connect();
+      expect((await migrateSqlDatabase(database.url)).applied).toBe(3);
+      expect((await migrateSqlDatabase(database.url)).applied).toBe(0);
+      expect(
+        (
+          await client.query(
+            'SELECT migration_name FROM "_prisma_migrations" ORDER BY migration_name',
+          )
+        ).rows.map((r) => r.migration_name),
+      ).toEqual([
+        "202611020001_initial",
+        "202611020002_integrity_privacy",
+        "202611030001_private_objects",
+      ]);
+      expect(
+        (
+          await client.query(
+            "SELECT to_regclass('public.\"PrivateObject\"') AS name",
+          )
+        ).rows[0].name,
+      ).toBeTruthy();
+      expect(
+        (
+          await client.query(
+            "SELECT count(*)::int AS count FROM pg_trigger WHERE tgname='immutable_audit'",
+          )
+        ).rows[0].count,
+      ).toBe(1);
+    } finally {
+      await client.end();
+      await database.close();
+    }
+  });
   it("serializes concurrent runs, preserves checksums, and rolls back failed migrations", async () => {
     const database = await testDatabase(55670, { migrate: false });
     const directory = await mkdtemp(join(tmpdir(), "personas-migrations-"));

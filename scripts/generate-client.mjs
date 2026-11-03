@@ -1,4 +1,5 @@
 import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 const require = createRequire(import.meta.url);
 const { getGenerators } = require("@prisma/internals");
 const { PrismaClientTsGenerator } = require("@prisma/client-generator-ts");
@@ -6,7 +7,9 @@ const { PrismaClientTsGenerator } = require("@prisma/client-generator-ts");
 // Prisma 7's TypeScript client uses the bundled WASM compiler and driver adapter.
 // It requires no native engine; keep generator packages pinned to the client.
 const generators = await getGenerators({
-  schemaPath: new URL("../prisma/schema.prisma", import.meta.url).pathname,
+  schemaPath: fileURLToPath(
+    new URL("../prisma/schema.prisma", import.meta.url),
+  ),
   registry: {
     "prisma-client": {
       type: "in-process",

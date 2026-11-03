@@ -22,9 +22,17 @@ Object.assign(process.env, {
   BETTER_AUTH_SECRET: randomBytes(48).toString("base64url"),
   LOCAL_EMAIL_CAPTURE: "true",
   ALLOW_LOCAL_STORAGE: "true",
-  FILE_STORAGE: "local",
+  FILE_STORAGE: process.env.PERSONAS_TEST_FILE_STORAGE || "local",
+  FILE_ENCRYPTION_KEY: randomBytes(32).toString("base64"),
+  JOB_EXECUTION: process.env.PERSONAS_TEST_JOB_EXECUTION || "manual",
   LOCAL_STORAGE_DIR: ".data/browser-files",
   NEXT_TELEMETRY_DISABLED: "1",
+  ...(process.env.PERSONAS_TEST_GOOGLE === "1"
+    ? {
+        GOOGLE_CLIENT_ID: "browser-fixture.apps.googleusercontent.com",
+        GOOGLE_CLIENT_SECRET: "browser-fixture-not-a-real-secret",
+      }
+    : {}),
 });
 // Real provider operations are deliberately absent in isolated verification.
 for (const key of [
@@ -36,6 +44,30 @@ for (const key of [
   delete process.env[key];
 const { db } = await import("../src/server/db");
 const { runJobs } = await import("../src/server/jobs");
+async function drainJobs() {
+  if (process.env.JOB_EXECUTION !== "after") {
+    await runJobs(30);
+    return;
+  }
+  for (let i = 0; i < 100; i++) {
+    if (
+      !(await db.job.count({
+        where: {
+          OR: [
+            { status: "processing" },
+            {
+              status: { in: ["queued", "retry"] },
+              availableAt: { lte: new Date() },
+            },
+          ],
+        },
+      }))
+    )
+      return;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  throw new Error("Post-response jobs did not complete");
+}
 const child = spawn(
   process.execPath,
   [
@@ -139,8 +171,44 @@ try {
     .getByRole("link", { name: "Pricing" })
     .click();
   await page.waitForURL("**/pricing");
+  await page.getByRole("heading", { name: /\$5\s*\/\s*month/ }).waitFor();
+  const pricing = await page.locator("main").innerText();
+  for (const amount of [5, 15, 39])
+    assert.match(pricing, new RegExp("\\$" + amount + "\\s*\\/\\s*month"));
+  await page.screenshot({
+    path: "docs/evidence/pricing-affordable.png",
+    fullPage: true,
+  });
+  passed("Public prices are the approved $5/$15/$39 monthly amounts");
   await scan("Pricing desktop");
   passed("Public product-to-pricing navigation");
+
+  if (process.env.PERSONAS_TEST_GOOGLE === "1") {
+    // Verify the browser redirect boundary, without pretending Google authenticated.
+    await page.route(
+      "https://accounts.google.com/**",
+      (route: {
+        fulfill: (options: Record<string, unknown>) => Promise<void>;
+      }) =>
+        route.fulfill({
+          status: 200,
+          contentType: "text/html",
+          body: "<h1>Google authorization boundary fixture</h1>",
+        }),
+    );
+    await go("/login");
+    await page.getByRole("button", { name: "Continue with Google" }).click();
+    await page.waitForURL((url: URL) => url.hostname === "accounts.google.com");
+    const authorization = new URL(page.url());
+    assert.equal(
+      authorization.searchParams.get("client_id"),
+      "browser-fixture.apps.googleusercontent.com",
+    );
+    assert(authorization.searchParams.get("state"));
+    passed(
+      "Google browser button starts state-protected OAuth (provider boundary fixture, not a real Google login)",
+    );
+  }
 
   await go("/signup");
   await page.getByLabel("Your name").fill("Browser owner");
@@ -156,7 +224,7 @@ try {
     orderBy: { createdAt: "desc" },
   });
   const link = (mail.payload as { text: string }).text.split("\n").at(-1)!;
-  await runJobs(10); // Captures a local fixture email; no real delivery is claimed.
+  await drainJobs(); // Local fixture capture, not real email delivery.
   await page.goto(link);
   await page.waitForURL(/\/(app|onboarding)/);
   await go("/onboarding");
@@ -260,9 +328,13 @@ try {
   await go(href("exports"));
   for (const format of ["csv", "pdf"]) {
     await page.getByLabel("File format").selectOption(format);
+    const exportSaved = page.waitForResponse(
+      (response: { url: () => string; ok: () => boolean }) =>
+        response.url().endsWith("/commands") && response.ok(),
+    );
     await page.getByRole("button", { name: "Prepare export" }).click();
-    await waitText("queued");
-    await runJobs(30);
+    await exportSaved;
+    await drainJobs();
     await page.reload();
     const downloadPromise = page.waitForEvent("download");
     await page
@@ -383,6 +455,8 @@ try {
     for (const path of [
       "/",
       "/pricing",
+      "/login",
+      "/signup",
       href(""),
       href("persona"),
       href("research"),
@@ -494,6 +568,8 @@ try {
         date: new Date().toISOString(),
         source: "Local Next.js production server",
         engine: database.engine,
+        storage: process.env.FILE_STORAGE,
+        jobExecution: process.env.JOB_EXECUTION,
         browser: await browser.version(),
         checks,
         accessibility,
