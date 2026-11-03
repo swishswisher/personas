@@ -4,6 +4,14 @@
 
 The user requested a ready Vercel/Neon service with owner-supplied Google/email credentials and approved much lower prices. The original recovered implementation was merged into master at `0a6e901`. This follow-up is on `master`; feature commit `cee2305` records the main changes, followed by verification/setup refinements. Publication is authorized. No GitHub Actions are permitted or used.
 
+## Production deployment request — 2026-11-03
+
+The user explicitly requested replacement of the existing Personas Vercel production deployment, keeping its simple public hostname. The application source for this release is `26e96034bac14772e804b2261c949fb3538906af`. The release record is being pushed to `master` to request deployment through the existing Vercel Git integration. This does not verify that the integration is enabled, that `master` is its production branch, or that deployment succeeded.
+
+The latest fetch found no newer remote source and the release guard found no repository workflow files. The release commit uses GitHub's documented `skip-checks: true` trailer, with two preceding empty lines, to skip push/pull-request Actions runs. No workflow is created or dispatched.
+
+Vercel access is still absent: no runtime token or saved token binding, and Vercel API/public-origin requests are blocked by the environment's network policy. The saved network draft now includes `personas.vercel.app` for verification; that requested hostname's ownership is unverified. No new Vercel project or domain assignment has been made. To inspect, configure and verify production, connect the existing project's Vercel account through the saved secure `VERCEL_TOKEN` requirement, review/save the network settings and publish the environment. Never paste the token in chat. Hosted runtime/migration/scanner/job prerequisites below remain unresolved.
+
 ## Implemented and verified locally
 
 - Approved monthly USD prices: Free / Starter $5 / Team $15 / Agency $39. AI successful-request allowances: 0/10/60/200. Shared website/workspace definitions; real Stripe price amount/interval/currency validation before checkout.
