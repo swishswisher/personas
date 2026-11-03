@@ -179,6 +179,13 @@ export async function runJobs(limit = 10) {
             },
           },
         });
+        if (exp.status === "revoked") {
+          await db.job.updateMany({
+            where: { id: job.id, lockToken: lock },
+            data: { status: "complete", completedAt: new Date() },
+          });
+          continue;
+        }
         const content = personaContent.parse(exp.snapshot.content),
           revision = exp.snapshot.approval.revision.number;
         const body =
@@ -216,12 +223,12 @@ export async function runJobs(limit = 10) {
       });
       if (job.kind === "extract")
         await db.researchSource.updateMany({
-          where: { id: String(p.sourceId) },
+          where: { id: String(p.sourceId), deletedAt: null },
           data: { status: "failed", failure: message.slice(0, 300) },
         });
       if (job.kind === "export")
         await db.exportJob.updateMany({
-          where: { id: String(p.exportId) },
+          where: { id: String(p.exportId), status: { not: "revoked" } },
           data: { status: "failed", failure: message.slice(0, 300) },
         });
       if (job.kind === "billing")

@@ -1,11 +1,10 @@
 import { beforeAll, afterAll, describe, it, expect } from "vitest";
 import { PGlite } from "@electric-sql/pglite";
-import { PGLiteSocketServer } from "@electric-sql/pglite-socket";
-import { readFile } from "node:fs/promises";
+import { testDatabase } from "../scripts/test-database";
 import { randomUUID } from "node:crypto";
 import type { Actor } from "../src/server/security";
 import type { PersonaContent } from "../src/lib/domain";
-let pg: PGlite, server: PGLiteSocketServer;
+let database: Awaited<ReturnType<typeof testDatabase>>;
 let db: typeof import("../src/server/db").db;
 let command: typeof import("../src/server/commands").command;
 let access: typeof import("../src/server/security");
@@ -38,8 +37,8 @@ let ws: string,
   shareToken: string;
 let content: PersonaContent;
 beforeAll(async () => {
-  process.env.DATABASE_URL =
-    "postgresql://postgres:postgres@127.0.0.1:55666/postgres?sslmode=disable";
+  database = await testDatabase(55666);
+  process.env.DATABASE_URL = database.url;
   process.env.BETTER_AUTH_URL = "http://localhost:3100";
   process.env.APP_URL = "http://localhost:3100";
   process.env.BETTER_AUTH_SECRET =
@@ -47,26 +46,6 @@ beforeAll(async () => {
   process.env.LOCAL_EMAIL_CAPTURE = "true";
   process.env.FILE_STORAGE = "local";
   process.env.LOCAL_STORAGE_DIR = ".data/integration-files";
-  pg = await PGlite.create();
-  await pg.exec(
-    await readFile(
-      "prisma/migrations/202611020001_initial/migration.sql",
-      "utf8",
-    ),
-  );
-  await pg.exec(
-    await readFile(
-      "prisma/migrations/202611020002_integrity_privacy/migration.sql",
-      "utf8",
-    ),
-  );
-  server = new PGLiteSocketServer({
-    db: pg,
-    port: 55666,
-    host: "127.0.0.1",
-    maxConnections: 20,
-  });
-  await server.start();
   ({ db } = await import("../src/server/db"));
   ({ command } = await import("../src/server/commands"));
   access = await import("../src/server/security");
@@ -125,8 +104,7 @@ beforeAll(async () => {
 });
 afterAll(async () => {
   await db?.$disconnect();
-  await server?.stop();
-  await pg?.close();
+  await database?.close();
 });
 describe("server-enforced tenancy and role boundaries", () => {
   it("denies workspace access to nonmembers", async () => {
@@ -826,6 +804,17 @@ describe("additional integrity and recovery paths", () => {
       "Requested fixture privacy erasure.",
     );
     expect(result.affectedPersonas).toBe(1);
+    expect(result.affectedDocuments).toBe(1);
+    const document = await db.projectDocument.findFirstOrThrow({
+      where: { workspaceId: ws },
+    });
+    expect(document.title).toBe("Redacted research document");
+    expect(document.version).toBe(2);
+    expect(document.content).toMatchObject({
+      stages: [],
+      personaIds: [],
+      observationIds: [],
+    });
     const source = await db.researchSource.findUniqueOrThrow({
       where: { id: sourceId },
     });
@@ -852,27 +841,236 @@ describe("additional integrity and recovery paths", () => {
       }),
     ).toBe(1);
   });
-  it("preserves persisted data when a PostgreSQL development backup is restored", async () => {
-    const backup = await pg.dumpDataDir();
-    const restored = await PGlite.create({ loadDataDir: backup });
-    try {
-      const result = await restored.query<{ name: string }>(
-        'SELECT name FROM "Persona" WHERE id=$1',
-        [personaId],
-      );
-      expect(result.rows[0].name).toBe("Redacted persona");
-      const revisions = await restored.query<{ count: number }>(
-        'SELECT count(*)::int AS count FROM "PersonaRevision" WHERE "personaId"=$1',
-        [personaId],
-      );
-      expect(revisions.rows[0].count).toBe(4);
-    } finally {
-      await restored.close();
-    }
+  it("does not resurrect a revoked export through retry or a fresh export request", async () => {
+    const exp = await db.exportJob.findFirstOrThrow({ where: { snapshotId } });
+    await expect(
+      command(editor, ws, { action: "export.retry", exportId: exp.id }),
+    ).rejects.toMatchObject({ code: "export_revoked" });
+    await expect(
+      command(owner, ws, {
+        action: "export.create",
+        snapshotId,
+        format: "pdf",
+      }),
+    ).rejects.toMatchObject({ code: "export_revoked" });
+    expect(
+      (await db.exportJob.findUniqueOrThrow({ where: { id: exp.id } })).status,
+    ).toBe("revoked");
   });
+  it("rejects a stale document that tries to reintroduce erased citations", async () => {
+    const document = await db.projectDocument.findFirstOrThrow({
+      where: { workspaceId: ws },
+    });
+    await expect(
+      command(editor, ws, {
+        action: "document.save",
+        documentId: document.id,
+        expectedVersion: 1,
+        projectId: project,
+        kind: "journey",
+        title: "Stale journey",
+        content: {
+          body: "Old sensitive text",
+          stages: [],
+          personaIds: [],
+          observationIds: [observationId],
+        },
+      }),
+    ).rejects.toMatchObject({ code: "evidence_scope" });
+  });
+  it("requires an expected version for document updates and permits one concurrent winner", async () => {
+    const document = await db.projectDocument.findFirstOrThrow({
+      where: { workspaceId: ws },
+    });
+    const input = {
+      action: "document.save",
+      documentId: document.id,
+      projectId: project,
+      kind: "journey",
+      title: "Permitted replacement",
+      content: {
+        body: "New permitted hypothesis",
+        stages: [],
+        personaIds: [],
+        observationIds: [],
+      },
+    };
+    await expect(command(editor, ws, input)).rejects.toMatchObject({
+      code: "conflict",
+    });
+    const results = await Promise.allSettled([
+      command(editor, ws, { ...input, expectedVersion: document.version }),
+      command(editor, ws, { ...input, expectedVersion: document.version }),
+    ]);
+    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+    expect(results.filter((r) => r.status === "rejected")).toHaveLength(1);
+  });
+  it.skipIf(!!process.env.PERSONAS_NATIVE_TEST_URL)(
+    "preserves persisted data when a PostgreSQL development backup is restored",
+    async () => {
+      const backup = await database.pg!.dumpDataDir();
+      const restored = await PGlite.create({ loadDataDir: backup });
+      try {
+        const result = await restored.query<{ name: string }>(
+          'SELECT name FROM "Persona" WHERE id=$1',
+          [personaId],
+        );
+        expect(result.rows[0].name).toBe("Redacted persona");
+        const revisions = await restored.query<{ count: number }>(
+          'SELECT count(*)::int AS count FROM "PersonaRevision" WHERE "personaId"=$1',
+          [personaId],
+        );
+        expect(revisions.rows[0].count).toBe(4);
+      } finally {
+        await restored.close();
+      }
+    },
+  );
 });
 
 describe("upload and queue recovery", () => {
+  it("does not leak restricted project names in notifications or queued emails", async () => {
+    const p = await personas.savePersona(owner, ws, {
+      projectId: restricted,
+      content: {
+        name: "Restricted audience secret",
+        subtitle: "",
+        summary: "Private hypothesis",
+        classification: "hypothesis",
+        claims: [],
+      },
+    });
+    await personas.reviewPersona(owner, ws, p.id, p.version, "submit");
+    const notifications = await db.notification.findMany({
+      where: {
+        workspaceId: ws,
+        text: { contains: "Restricted audience secret" },
+      },
+    });
+    expect(notifications.some((n) => n.userId === owner.id)).toBe(true);
+    expect(
+      notifications.some(
+        (n) => n.userId === viewer.id || n.userId === editor.id,
+      ),
+    ).toBe(false);
+    for (const user of [viewer, editor])
+      expect(
+        await db.job.count({
+          where: {
+            kind: "email",
+            payload: { path: ["to"], equals: user.email },
+            key: { in: notifications.map((n) => "notification:" + n.id) },
+          },
+        }),
+      ).toBe(0);
+  });
+  it("clears uncited observation content and linked briefs when a source is removed", async () => {
+    const source = (await command(owner, ws, {
+      action: "source.create",
+      projectId: project,
+      title: "Uncited private record",
+      kind: "note",
+      text: "Private uncited passage",
+      tags: [],
+      classification: "finding",
+    })) as { id: string };
+    const observation = (await command(owner, ws, {
+      action: "observation.create",
+      sourceId: source.id,
+      quote: "Private uncited passage",
+      start: 0,
+      insight: "Private insight",
+      tags: [],
+      classification: "finding",
+    })) as { id: string };
+    const doc = (await command(owner, ws, {
+      action: "document.save",
+      projectId: project,
+      kind: "brief",
+      title: "Private brief",
+      content: {
+        body: "Private insight",
+        stages: [],
+        observationIds: [observation.id],
+        personaIds: [],
+      },
+    })) as { id: string };
+    await command(owner, ws, { action: "source.delete", sourceId: source.id });
+    expect(
+      (
+        await db.observation.findUniqueOrThrow({
+          where: { id: observation.id },
+        })
+      ).quote,
+    ).toBe("[redacted]");
+    expect(
+      (await db.projectDocument.findUniqueOrThrow({ where: { id: doc.id } }))
+        .title,
+    ).toBe("Redacted research document");
+  });
+  it("serializes a simultaneous save and privacy redaction without retaining erased content", async () => {
+    const source = (await command(owner, ws, {
+      action: "source.create",
+      projectId: project,
+      title: "Race record",
+      kind: "note",
+      text: "Erase this exact evidence",
+      tags: [],
+      classification: "finding",
+    })) as { id: string };
+    const obs = (await command(owner, ws, {
+      action: "observation.create",
+      sourceId: source.id,
+      quote: "Erase this exact evidence",
+      start: 0,
+      insight: "Erase this insight",
+      tags: [],
+      classification: "finding",
+    })) as { id: string };
+    const c: PersonaContent = {
+      name: "Erase this persona",
+      subtitle: "",
+      summary: "Erase this summary",
+      classification: "finding",
+      claims: [
+        {
+          id: "one",
+          section: "goal",
+          text: "Erase this insight",
+          classification: "finding",
+          observationIds: [obs.id],
+          assumptions: "",
+        },
+      ],
+    };
+    const p = await personas.savePersona(owner, ws, {
+      projectId: project,
+      content: c,
+    });
+    const { redactSource } = await import("../src/server/privacy");
+    const results = await Promise.allSettled([
+      personas.savePersona(owner, ws, {
+        projectId: project,
+        personaId: p.id,
+        expectedVersion: p.version,
+        content: c,
+      }),
+      redactSource(owner, ws, source.id, "Concurrent privacy erasure request."),
+    ]);
+    expect(results[1].status).toBe("fulfilled");
+    const revisions = await db.personaRevision.findMany({
+      where: { personaId: p.id },
+    });
+    expect(
+      revisions.every(
+        (r) =>
+          (r.content as unknown as PersonaContent).name === "Redacted persona",
+      ),
+    ).toBe(true);
+    await expect(
+      personas.savePersona(owner, ws, { projectId: project, content: c }),
+    ).rejects.toMatchObject({ code: "evidence_scope" });
+  });
   it("preserves a failed source and retries extraction without duplicating it", async () => {
     const { putFile } = await import("../src/server/storage");
     const key = "research/integration/retry-fixture";

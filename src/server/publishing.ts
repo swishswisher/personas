@@ -32,6 +32,7 @@ export async function publishPersona(
     ? hashPassphrase(input.passphrase)
     : null;
   const result = await db.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "Workspace" WHERE id=${workspaceId} FOR UPDATE`;
     await tx.$queryRaw`SELECT id FROM "Persona" WHERE id=${persona.id} FOR UPDATE`;
     const current = await tx.persona.findUniqueOrThrow({
       where: { id: persona.id },

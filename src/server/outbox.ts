@@ -55,9 +55,23 @@ export async function notifyInTransaction(
   title: string,
   text: string,
   href: string,
+  projectId?: string,
 ) {
+  const project = projectId
+    ? await tx.project.findUniqueOrThrow({ where: { id: projectId } })
+    : null;
   const members = await tx.membership.findMany({
-    where: { workspaceId },
+    where: {
+      workspaceId,
+      ...(project?.restricted
+        ? {
+            OR: [
+              { role: "owner" },
+              { user: { projectMembers: { some: { projectId } } } },
+            ],
+          }
+        : {}),
+    },
     include: { user: true },
   });
   for (const member of members) {

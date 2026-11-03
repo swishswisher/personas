@@ -23,17 +23,19 @@ export async function savePersona(
   const observationIds = [
     ...new Set(content.claims.flatMap((c) => c.observationIds)),
   ];
-  const observations = await db.observation.findMany({
-    where: {
-      id: { in: observationIds },
-      workspaceId,
-      projectId: input.projectId,
-      source: { deletedAt: null, status: "ready" },
-    },
-  });
-  validateEvidence(content, observations);
   return db.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT id FROM "Workspace" WHERE id=${workspaceId} FOR UPDATE`;
+    // Recheck evidence under the same lock as privacy erasure. A preflight
+    // read could otherwise let a waiting save reintroduce erased content.
+    const observations = await tx.observation.findMany({
+      where: {
+        id: { in: observationIds },
+        workspaceId,
+        projectId: input.projectId,
+        source: { deletedAt: null, status: "ready" },
+      },
+    });
+    validateEvidence(content, observations);
     let persona = input.personaId
       ? await tx.persona.findFirst({
           where: {
@@ -133,6 +135,7 @@ export async function reviewPersona(
     action === "submit" ? "editor" : "owner",
   );
   await db.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "Workspace" WHERE id=${workspaceId} FOR UPDATE`;
     const changed = await tx.persona.updateMany({
       where: {
         id: personaId,
@@ -175,6 +178,7 @@ export async function reviewPersona(
           : "Changes requested",
       `${persona.name} · revision ${version}`,
       `/app/persona?id=${personaId}&project=${persona.projectId}`,
+      persona.projectId,
     );
     await tx.auditEvent.create({
       data: {

@@ -302,47 +302,16 @@ export async function command(actor: Actor, workspaceId: string, raw: unknown) {
         true,
       );
       if (c.action === "source.delete") {
-        const evidence = await db.evidenceLink.count({
-          where: { observation: { sourceId: source.id } },
-        });
-        ensure(
-          evidence === 0,
-          409,
-          "retained_evidence",
-          "This source supports saved persona revisions. Use the explicit privacy-redaction action to remove the source and affected insights.",
+        const { redactSource } = await import("./privacy");
+        return redactSource(
+          actor,
+          workspaceId,
+          source.id,
+          "Owner removed an uncited research source.",
+          true,
         );
-        await db.$transaction(async (tx) => {
-          if (source.fileKey)
-            await tx.job.upsert({
-              where: { key: "delete:" + source.fileKey },
-              create: {
-                key: "delete:" + source.fileKey,
-                kind: "delete_file",
-                payload: { fileKey: source.fileKey },
-              },
-              update: {},
-            });
-          await tx.researchSource.update({
-            where: { id: source.id },
-            data: {
-              deletedAt: new Date(),
-              text: "",
-              fileKey: null,
-              status: "deleted",
-            },
-          });
-          await tx.auditEvent.create({
-            data: {
-              workspaceId,
-              actorId: actor.id,
-              action: c.action,
-              targetId: source.id,
-            },
-          });
-        });
-
-        return { ok: true };
       }
+
       ensure(source.fileKey, 422, "no_file", "Paste a manual record instead.");
       await db.$transaction(async (tx) => {
         await tx.researchSource.update({
@@ -493,6 +462,21 @@ export async function command(actor: Actor, workspaceId: string, raw: unknown) {
         true,
       );
       return db.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM "Workspace" WHERE id=${workspaceId} FOR UPDATE`;
+        const erasedEvidence = await tx.evidenceLink.count({
+          where: {
+            revision: {
+              approval: { snapshots: { some: { id: snapshot.id } } },
+            },
+            observation: { source: { deletedAt: { not: null } } },
+          },
+        });
+        ensure(
+          !erasedEvidence,
+          410,
+          "export_revoked",
+          "This snapshot contains redacted research. Approve a new draft before exporting.",
+        );
         const job = await tx.exportJob.create({
           data: {
             snapshotId: snapshot.id,
@@ -521,6 +505,12 @@ export async function command(actor: Actor, workspaceId: string, raw: unknown) {
         include: { snapshot: true },
       });
       ensure(exp, 404, "not_found", "Export is unavailable.");
+      ensure(
+        exp.status !== "revoked",
+        410,
+        "export_revoked",
+        "This export was revoked through privacy redaction and cannot be retried.",
+      );
       await projectAccess(
         actor,
         workspaceId,
@@ -529,90 +519,107 @@ export async function command(actor: Actor, workspaceId: string, raw: unknown) {
         false,
         true,
       );
-      await db.$transaction([
-        db.exportJob.update({
-          where: { id: exp.id },
+      await db.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM "Workspace" WHERE id=${workspaceId} FOR UPDATE`;
+        const changed = await tx.exportJob.updateMany({
+          where: { id: exp.id, status: { not: "revoked" } },
           data: {
             status: "queued",
             failure: null,
             expiresAt: new Date(Date.now() + 7 * 86400000),
           },
-        }),
-        db.job.update({
+        });
+        ensure(
+          changed.count,
+          410,
+          "export_revoked",
+          "This export was revoked through privacy redaction.",
+        );
+        await tx.job.update({
           where: { key: "export:" + exp.id },
           data: { status: "queued", attempts: 0, availableAt: new Date() },
-        }),
-      ]);
+        });
+      });
       return { ok: true };
     }
     case "document.save": {
       await projectAccess(actor, workspaceId, c.projectId, "editor");
-      const obsIds = [
-        ...new Set([
-          ...c.content.observationIds,
-          ...c.content.stages.flatMap((s) => s.observationIds),
-        ]),
-      ];
-      ensure(
-        obsIds.length ===
-          (await db.observation.count({
+      return db.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM "Workspace" WHERE id=${workspaceId} FOR UPDATE`;
+        const obsIds = [
+          ...new Set([
+            ...c.content.observationIds,
+            ...c.content.stages.flatMap((s) => s.observationIds),
+          ]),
+        ];
+        ensure(
+          obsIds.length ===
+            (await tx.observation.count({
+              where: {
+                workspaceId,
+                projectId: c.projectId,
+                id: { in: obsIds },
+                source: { deletedAt: null },
+              },
+            })),
+          422,
+          "evidence_scope",
+          "A document citation is unavailable.",
+        );
+        ensure(
+          c.content.personaIds.length ===
+            (await tx.persona.count({
+              where: {
+                workspaceId,
+                projectId: c.projectId,
+                id: { in: c.content.personaIds },
+                deletedAt: null,
+              },
+            })),
+          422,
+          "persona_scope",
+          "A linked persona is unavailable.",
+        );
+        if (c.documentId) {
+          ensure(
+            c.expectedVersion !== undefined,
+            409,
+            "conflict",
+            "Reload the document before saving its next version.",
+          );
+          const changed = await tx.projectDocument.updateMany({
             where: {
+              id: c.documentId,
               workspaceId,
               projectId: c.projectId,
-              id: { in: obsIds },
-              source: { deletedAt: null },
+              version: c.expectedVersion,
             },
-          })),
-        422,
-        "evidence_scope",
-        "A document citation is unavailable.",
-      );
-      ensure(
-        c.content.personaIds.length ===
-          (await db.persona.count({
-            where: {
-              workspaceId,
-              projectId: c.projectId,
-              id: { in: c.content.personaIds },
-              deletedAt: null,
+            data: {
+              title: c.title,
+              content: c.content,
+              version: { increment: 1 },
             },
-          })),
-        422,
-        "persona_scope",
-        "A linked persona is unavailable.",
-      );
-      if (c.documentId) {
-        const changed = await db.projectDocument.updateMany({
-          where: {
-            id: c.documentId,
+          });
+          ensure(
+            changed.count,
+            409,
+            "conflict",
+            "This document changed. Reload before saving.",
+          );
+          return { id: c.documentId };
+        }
+        return tx.projectDocument.create({
+          data: {
             workspaceId,
             projectId: c.projectId,
-            version: c.expectedVersion,
-          },
-          data: {
             title: c.title,
+            kind: c.kind,
             content: c.content,
-            version: { increment: 1 },
           },
         });
-        ensure(
-          changed.count,
-          409,
-          "conflict",
-          "This document changed. Reload before saving.",
-        );
-        return { id: c.documentId };
-      }
-      return db.projectDocument.create({
-        data: {
-          workspaceId,
-          projectId: c.projectId,
-          title: c.title,
-          kind: c.kind,
-          content: c.content,
-        },
       });
     }
+
     case "invite.create":
       return createInvitation(actor, workspaceId, c);
     case "invite.revoke":
