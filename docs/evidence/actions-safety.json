@@ -1,11 +1,11 @@
 {
-  "checkedAt": "2026-11-02T12:50:05.328Z",
+  "checkedAt": "2026-11-03T06:15:07.257Z",
   "repository": "swishswisher/personas",
   "baseBranch": "master",
   "baseCommit": "444c4b7a5cdebf5bb43265fe0a47af4cf3b39ee5",
   "remoteWorkflowFiles": [],
   "localWorkflowFiles": [],
-  "repositoryRulesets": "No rulesets returned by the read-only GitHub rulesets API during release preparation",
+  "repositoryRulesets": "Not checked by this script; inspect repository and organization rules before publication.",
   "actionsUsed": false,
-  "decision": "Safe to push this implementation branch: no workflow files on either side."
+  "decision": "No workflow files found on the inspected base or checkout. Keep commits local; this check does not authorize a push or verify organization rules."
 }

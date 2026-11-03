@@ -1,0 +1,10 @@
+{
+  "checkedAt": "2026-11-03",
+  "url": "https://personas-git-build-complete-perso-d86431-swishswishers-projects.vercel.app",
+  "result": "blocked",
+  "observedError": "HTTP proxy CONNECT returned 403; no origin response obtained",
+  "sourceCommit": "9f19e6b329496c76754337c0ad151c57d032c84b",
+  "currentLocalChangesDeployed": false,
+  "vercelEnvironmentAccess": "No configured credentials or connector; earlier 403 is historical",
+  "neonAccess": "No configured credential binding, connector or TCP grant; historical resources not modified"
+}

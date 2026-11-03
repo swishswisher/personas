@@ -19,13 +19,16 @@ Object.assign(process.env, {
   UPLOAD_SCAN_TOKEN: "fixture-scanner-token",
 });
 // Contract stub for the scanner boundary; this is not a real malware scanner.
+let scannerAccept = true;
 const scanner = createServer((request, response) => {
   request.resume();
   request.on("end", () => {
     response.setHeader("Content-Type", "application/json");
     response.end(
       JSON.stringify({
-        clean: request.headers.authorization === "Bearer fixture-scanner-token",
+        clean:
+          scannerAccept &&
+          request.headers.authorization === "Bearer fixture-scanner-token",
       }),
     );
   });
@@ -280,6 +283,59 @@ try {
   assert.equal(extracted.status, "ready");
   assert(extracted.text.includes("UTF-8"));
   ok("Private upload → background text extraction → persisted source");
+  const filePath = `/api/v1/workspaces/${workspaceId}/files/${uploadSource.id}`;
+  const original = await request(filePath);
+  assert.equal(original.status, 200);
+  assert.equal(original.headers.get("cache-control"), "private, no-store");
+  assert((await original.text()).includes("UTF-8 fixture interview"));
+  assert.equal((await request(filePath, undefined, true)).status, 401);
+  ok("Original private file download succeeds only with a signed session");
+  const ownerCookies = new Map(jar);
+  jar.clear();
+  const outsiderEmail = "http-outsider@fixture.example";
+  await json("/api/auth/sign-up/email", {
+    email: outsiderEmail,
+    password,
+    name: "HTTP outsider",
+  });
+  const outsiderMail = await db.job.findFirstOrThrow({
+    where: { kind: "email", payload: { path: ["to"], equals: outsiderEmail } },
+    orderBy: { createdAt: "desc" },
+  });
+  await request(
+    (outsiderMail.payload as { text: string }).text
+      .split("\n")
+      .at(-1)!
+      .replace(origin, ""),
+  );
+  await json("/api/auth/sign-in/email", { email: outsiderEmail, password });
+  const otherWorkspace = await json("/api/v1/onboarding", {
+    workspaceName: "HTTP other tenant",
+    projectName: "Other tenant project",
+  });
+  assert.equal((await request(filePath)).status, 404);
+  assert.equal(
+    (
+      await request(
+        `/api/v1/workspaces/${otherWorkspace.workspaceId}/files/${uploadSource.id}`,
+      )
+    ).status,
+    404,
+  );
+  assert.equal(
+    (await request(`/api/v1/workspaces/${workspaceId}/data`)).status,
+    404,
+  );
+  assert.equal(
+    (await request(`/api/v1/workspaces/${workspaceId}/exports/${exportJob.id}`))
+      .status,
+    410,
+  );
+  jar.clear();
+  for (const [key, value] of ownerCookies) jar.set(key, value);
+  ok(
+    "Authenticated other tenant denied private source, guessed file, workspace and export URLs",
+  );
   const { renderPdf } = await import("../src/server/jobs");
   const pdfBody = await renderPdf(
     {
@@ -323,6 +379,66 @@ try {
   assert.equal(pdfExtracted.status, "ready", pdfExtracted.failure);
   assert(pdfExtracted.text.includes("HTTP deliberate buyer"));
   ok("PDF upload → scanner contract → bundled Next.js worker extraction");
+  scannerAccept = false;
+  const rejectedUpload = new FormData();
+  rejectedUpload.append("projectId", projectId);
+  rejectedUpload.append(
+    "file",
+    new File([new Uint8Array(pdfBody)], "retry.pdf", {
+      type: "application/pdf",
+    }),
+  );
+  const rejectedResponse = await fetch(
+    origin + `/api/v1/workspaces/${workspaceId}/upload`,
+    {
+      method: "POST",
+      headers: {
+        origin,
+        cookie: [...jar].map(([k, v]) => k + "=" + v).join("; "),
+      },
+      body: rejectedUpload,
+    },
+  );
+  assert.equal(rejectedResponse.status, 200);
+  const rejectedSource = await rejectedResponse.json();
+  await fetch(origin + "/api/jobs", {
+    headers: { Authorization: "Bearer http-fixture-worker-secret" },
+  });
+  const failedSource = await json(
+    `/api/v1/workspaces/${workspaceId}/sources/${rejectedSource.id}`,
+  );
+  assert.equal(failedSource.status, "failed");
+  assert.equal(
+    (
+      await request(
+        `/api/v1/workspaces/${workspaceId}/files/${rejectedSource.id}`,
+      )
+    ).status,
+    404,
+  );
+  ok(
+    "Scanner rejection quarantines the PDF and denies original-file downloads",
+  );
+  scannerAccept = true;
+  await command({ action: "source.retry", sourceId: rejectedSource.id });
+  await fetch(origin + "/api/jobs", {
+    headers: { Authorization: "Bearer http-fixture-worker-secret" },
+  });
+  assert.equal(
+    (
+      await json(
+        `/api/v1/workspaces/${workspaceId}/sources/${rejectedSource.id}`,
+      )
+    ).status,
+    "ready",
+  );
+  assert.equal(
+    await db.researchSource.count({ where: { id: rejectedSource.id } }),
+    1,
+  );
+  ok(
+    "Scanner contract recovery retries extraction without duplicating the source",
+  );
 
   const pages = [
     "",
