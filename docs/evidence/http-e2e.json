@@ -1,0 +1,277 @@
+{
+  "date": "2026-11-03T06:12:39.990Z",
+  "engine": "Next.js production server + PostgreSQL 17 native",
+  "checks": [
+    {
+      "check": "Public page /",
+      "status": "passed",
+      "ms": 14
+    },
+    {
+      "check": "Public page /product",
+      "status": "passed",
+      "ms": 238
+    },
+    {
+      "check": "Public page /solutions",
+      "status": "passed",
+      "ms": 19
+    },
+    {
+      "check": "Public page /solutions/agencies",
+      "status": "passed",
+      "ms": 42
+    },
+    {
+      "check": "Public page /solutions/product-teams",
+      "status": "passed",
+      "ms": 21
+    },
+    {
+      "check": "Public page /solutions/marketers",
+      "status": "passed",
+      "ms": 15
+    },
+    {
+      "check": "Public page /methodology",
+      "status": "passed",
+      "ms": 12
+    },
+    {
+      "check": "Public page /examples",
+      "status": "passed",
+      "ms": 17
+    },
+    {
+      "check": "Public page /resources",
+      "status": "passed",
+      "ms": 12
+    },
+    {
+      "check": "Public page /resources/evidence",
+      "status": "passed",
+      "ms": 14
+    },
+    {
+      "check": "Public page /resources/interviews",
+      "status": "passed",
+      "ms": 13
+    },
+    {
+      "check": "Public page /resources/living-personas",
+      "status": "passed",
+      "ms": 10
+    },
+    {
+      "check": "Public page /pricing",
+      "status": "passed",
+      "ms": 16
+    },
+    {
+      "check": "Public page /about",
+      "status": "passed",
+      "ms": 10
+    },
+    {
+      "check": "Public page /contact",
+      "status": "passed",
+      "ms": 12
+    },
+    {
+      "check": "Public page /privacy",
+      "status": "passed",
+      "ms": 15
+    },
+    {
+      "check": "Public page /terms",
+      "status": "passed",
+      "ms": 10
+    },
+    {
+      "check": "Public page /login",
+      "status": "passed",
+      "ms": 25
+    },
+    {
+      "check": "Public page /signup",
+      "status": "passed",
+      "ms": 10
+    },
+    {
+      "check": "Public page /reset",
+      "status": "passed",
+      "ms": 7
+    },
+    {
+      "check": "Public page /verify",
+      "status": "passed",
+      "ms": 7
+    },
+    {
+      "check": "Public page /invite",
+      "status": "passed",
+      "ms": 8
+    },
+    {
+      "check": "Public page /onboarding",
+      "status": "passed",
+      "ms": 9
+    },
+    {
+      "check": "Enquiry persists",
+      "status": "passed"
+    },
+    {
+      "check": "Registration → verification → sign-in → signed session",
+      "status": "passed"
+    },
+    {
+      "check": "Research → exact observation → saved persona → owner approval → immutable share",
+      "status": "passed"
+    },
+    {
+      "check": "Queued CSV export → private authorized download",
+      "status": "passed"
+    },
+    {
+      "check": "Private upload → background text extraction → persisted source",
+      "status": "passed"
+    },
+    {
+      "check": "Original private file download succeeds only with a signed session",
+      "status": "passed"
+    },
+    {
+      "check": "Authenticated other tenant denied private source, guessed file, workspace and export URLs",
+      "status": "passed"
+    },
+    {
+      "check": "PDF upload → scanner contract → bundled Next.js worker extraction",
+      "status": "passed"
+    },
+    {
+      "check": "Scanner rejection quarantines the PDF and denies original-file downloads",
+      "status": "passed"
+    },
+    {
+      "check": "Scanner contract recovery retries extraction without duplicating the source",
+      "status": "passed"
+    },
+    {
+      "check": "Authenticated page /app/",
+      "status": "passed"
+    },
+    {
+      "check": "Authenticated page /app/projects",
+      "status": "passed"
+    },
+    {
+      "check": "Authenticated page /app/project",
+      "status": "passed"
+    },
+    {
+      "check": "Authenticated page /app/research",
+      "status": "passed"
+    },
+    {
+      "check": "Authenticated page /app/research/new",
+      "status": "passed"
+    },
+    {
+      "check": "Authenticated page /app/research/cmw0ajngq00089foak0l9m4gd",
+      "status": "passed"
+    },
+    {
+      "check": "Authenticated page /app/personas",
+      "status": "passed"
+    },
+    {
+      "check": "Authenticated page /app/builder",
+      "status": "passed"
+    },
+    {
+      "check": "Authenticated page /app/persona",
+      "status": "passed"
+    },
+    {
+      "check": "Authenticated page /app/history",
+      "status": "passed"
+    },
+    {
+      "check": "Authenticated page /app/review",
+      "status": "passed"
+    },
+    {
+      "check": "Authenticated page /app/publish",
+      "status": "passed"
+    },
+    {
+      "check": "Authenticated page /app/exports",
+      "status": "passed"
+    },
+    {
+      "check": "Authenticated page /app/journeys",
+      "status": "passed"
+    },
+    {
+      "check": "Authenticated page /app/compare",
+      "status": "passed"
+    },
+    {
+      "check": "Authenticated page /app/ask",
+      "status": "passed"
+    },
+    {
+      "check": "Authenticated page /app/gaps",
+      "status": "passed"
+    },
+    {
+      "check": "Authenticated page /app/briefs",
+      "status": "passed"
+    },
+    {
+      "check": "Authenticated page /app/team",
+      "status": "passed"
+    },
+    {
+      "check": "Authenticated page /app/settings",
+      "status": "passed"
+    },
+    {
+      "check": "Authenticated page /app/billing",
+      "status": "passed"
+    },
+    {
+      "check": "Authenticated page /app/checkout",
+      "status": "passed"
+    },
+    {
+      "check": "Authenticated page /app/support",
+      "status": "passed"
+    },
+    {
+      "check": "Authenticated page /app/notifications",
+      "status": "passed"
+    },
+    {
+      "check": "Unsigned API and cross-origin mutation rejected",
+      "status": "passed"
+    },
+    {
+      "check": "Revoked share denied on subsequent HTTP retrieval",
+      "status": "passed"
+    },
+    {
+      "check": "Persistence across sign-out and a new signed session",
+      "status": "passed"
+    },
+    {
+      "check": "Separate staff authorization and all six administration pages",
+      "status": "passed"
+    }
+  ],
+  "limitations": [
+    "HTTP and SSR checks; browser interaction and assistive technology checks are recorded separately.",
+    "No live payment, AI, email or S3 credentials were used."
+  ]
+}

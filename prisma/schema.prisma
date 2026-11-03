@@ -1,0 +1,388 @@
+generator client {
+ provider = "prisma-client"
+ output = "../src/generated/prisma"
+}
+datasource db {
+ provider = "postgresql"
+}
+model User {
+ id String @id
+ name String
+ email String @unique
+ emailVerified Boolean @default(false)
+ image String?
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ staffRole String?
+ sessions Session[]
+ accounts Account[]
+ memberships Membership[]
+ projectMembers ProjectMember[]
+ notifications Notification[]
+}
+model Session {
+ id String @id
+ expiresAt DateTime
+ token String @unique
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ ipAddress String?
+ userAgent String?
+ userId String
+ user User @relation(fields:[userId], references:[id], onDelete:Cascade)
+ @@index([userId])
+}
+model Account {
+ id String @id
+ accountId String
+ providerId String
+ userId String
+ accessToken String?
+ refreshToken String?
+ idToken String?
+ accessTokenExpiresAt DateTime?
+ refreshTokenExpiresAt DateTime?
+ scope String?
+ password String?
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ user User @relation(fields:[userId], references:[id], onDelete:Cascade)
+ @@index([userId])
+}
+model Verification {
+ id String @id
+ identifier String
+ value String
+ expiresAt DateTime
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ @@index([identifier])
+}
+model RateLimit {
+ id String @id @default(cuid())
+ key String @unique
+ count Int
+ lastRequest BigInt
+}
+model Workspace {
+ id String @id @default(cuid())
+ name String
+ demo Boolean @default(false)
+ aiEnabled Boolean @default(false)
+ retentionDays Int @default(365)
+ createdAt DateTime @default(now())
+ memberships Membership[]
+ projects Project[]
+ invitations Invitation[]
+ subscription Subscription?
+ support SupportRequest[]
+}
+model Membership {
+ id String @id @default(cuid())
+ workspaceId String
+ userId String
+ role String @default("viewer")
+ createdAt DateTime @default(now())
+ workspace Workspace @relation(fields:[workspaceId], references:[id],onDelete:Cascade)
+ user User @relation(fields:[userId], references:[id],onDelete:Cascade)
+ @@unique([workspaceId,userId])
+ @@index([userId])
+}
+model Project {
+ id String @id @default(cuid())
+ workspaceId String
+ name String
+ description String @default("")
+ restricted Boolean @default(false)
+ viewerResearch Boolean @default(false)
+ archived Boolean @default(false)
+ createdAt DateTime @default(now())
+ workspace Workspace @relation(fields:[workspaceId],references:[id],onDelete:Cascade)
+ members ProjectMember[]
+ sources ResearchSource[]
+ observations Observation[]
+ personas Persona[]
+ documents ProjectDocument[]
+ @@unique([id,workspaceId])
+ @@index([workspaceId,archived])
+}
+model ProjectMember {
+ id String @id @default(cuid())
+ projectId String
+ userId String
+ project Project @relation(fields:[projectId],references:[id],onDelete:Cascade)
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ @@unique([projectId,userId])
+}
+model Invitation {
+ id String @id @default(cuid())
+ workspaceId String
+ email String
+ role String
+ projectIds String[]
+ tokenHash String @unique
+ expiresAt DateTime
+ acceptedAt DateTime?
+ revokedAt DateTime?
+ createdAt DateTime @default(now())
+ workspace Workspace @relation(fields:[workspaceId],references:[id],onDelete:Cascade)
+ @@index([workspaceId,email])
+}
+model ResearchSource {
+ id String @id @default(cuid())
+ workspaceId String
+ projectId String
+ title String
+ kind String
+ participant String?
+ text String @default("")
+ tags String[]
+ classification String @default("finding")
+ fileKey String? @unique
+ fileName String?
+ mime String?
+ bytes Int @default(0)
+ status String @default("ready")
+ failure String?
+ createdAt DateTime @default(now())
+ deletedAt DateTime?
+ project Project @relation(fields:[projectId,workspaceId],references:[id,workspaceId],onDelete:Cascade)
+ observations Observation[]
+ @@unique([id,workspaceId,projectId])
+ @@index([workspaceId,projectId,createdAt])
+}
+model Observation {
+ id String @id @default(cuid())
+ workspaceId String
+ projectId String
+ sourceId String
+ quote String
+ start Int
+ end Int
+ insight String
+ tags String[]
+ classification String @default("finding")
+ createdAt DateTime @default(now())
+ source ResearchSource @relation(fields:[sourceId,workspaceId,projectId],references:[id,workspaceId,projectId],onDelete:Restrict)
+ project Project @relation(fields:[projectId,workspaceId],references:[id,workspaceId],onDelete:Cascade)
+ evidence EvidenceLink[]
+ @@unique([id,workspaceId,projectId])
+ @@index([workspaceId,projectId])
+}
+model Persona {
+ id String @id @default(cuid())
+ workspaceId String
+ projectId String
+ name String
+ summary String @default("")
+ classification String @default("hypothesis")
+ status String @default("draft")
+ version Int @default(0)
+ deletedAt DateTime?
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ project Project @relation(fields:[projectId,workspaceId],references:[id,workspaceId],onDelete:Cascade)
+ revisions PersonaRevision[]
+ comments Comment[]
+ @@unique([id,workspaceId,projectId])
+ @@index([workspaceId,projectId,status,updatedAt])
+}
+model PersonaRevision {
+ id String @id @default(cuid())
+ workspaceId String
+ projectId String
+ personaId String
+ number Int
+ authorId String
+ content Json
+ note String @default("")
+ createdAt DateTime @default(now())
+ persona Persona @relation(fields:[personaId,workspaceId,projectId],references:[id,workspaceId,projectId],onDelete:Restrict)
+ evidence EvidenceLink[]
+ approval Approval?
+ comments Comment[]
+ @@unique([personaId,number])
+ @@unique([id,workspaceId,projectId])
+}
+model EvidenceLink {
+ id String @id @default(cuid())
+ workspaceId String
+ projectId String
+ revisionId String
+ observationId String
+ revision PersonaRevision @relation(fields:[revisionId,workspaceId,projectId],references:[id,workspaceId,projectId],onDelete:Restrict)
+ observation Observation @relation(fields:[observationId,workspaceId,projectId],references:[id,workspaceId,projectId],onDelete:Restrict)
+ @@unique([revisionId,observationId])
+}
+model Approval {
+ id String @id @default(cuid())
+ revisionId String @unique
+ approverId String
+ createdAt DateTime @default(now())
+ revision PersonaRevision @relation(fields:[revisionId],references:[id],onDelete:Restrict)
+ snapshots PublishedSnapshot[]
+}
+model PublishedSnapshot {
+ id String @id @default(cuid())
+ approvalId String
+ content Json
+ workspaceId String
+ projectId String
+ createdAt DateTime @default(now())
+ approval Approval @relation(fields:[approvalId],references:[id],onDelete:Restrict)
+ shares ShareGrant[]
+ exports ExportJob[]
+ @@index([workspaceId,projectId])
+}
+model ShareGrant {
+ id String @id @default(cuid())
+ snapshotId String
+ tokenHash String @unique
+ passphraseHash String?
+ recipientEmail String?
+ membersOnly Boolean @default(false)
+ expiresAt DateTime
+ revokedAt DateTime?
+ createdAt DateTime @default(now())
+ snapshot PublishedSnapshot @relation(fields:[snapshotId],references:[id],onDelete:Restrict)
+ @@index([snapshotId])
+}
+model ExportJob {
+ id String @id @default(cuid())
+ snapshotId String
+ requestedBy String
+ format String
+ status String @default("queued")
+ fileKey String?
+ failure String?
+ expiresAt DateTime
+ createdAt DateTime @default(now())
+ snapshot PublishedSnapshot @relation(fields:[snapshotId],references:[id],onDelete:Restrict)
+ @@index([requestedBy,createdAt])
+}
+model Comment {
+ id String @id @default(cuid())
+ personaId String
+ revisionId String
+ authorId String
+ authorName String
+ text String
+ resolved Boolean @default(false)
+ createdAt DateTime @default(now())
+ persona Persona @relation(fields:[personaId],references:[id],onDelete:Restrict)
+ revision PersonaRevision @relation(fields:[revisionId],references:[id],onDelete:Restrict)
+ @@index([personaId,createdAt])
+}
+model ProjectDocument {
+ id String @id @default(cuid())
+ workspaceId String
+ projectId String
+ kind String
+ title String
+ content Json
+ version Int @default(1)
+ updatedAt DateTime @updatedAt
+ project Project @relation(fields:[projectId,workspaceId],references:[id,workspaceId],onDelete:Cascade)
+ @@index([workspaceId,projectId,kind])
+}
+model Subscription {
+ id String @id @default(cuid())
+ workspaceId String @unique
+ customerId String? @unique
+ providerId String? @unique
+ plan String @default("free")
+ status String @default("free")
+ seats Int @default(1)
+ periodEnd DateTime?
+ cancelAtEnd Boolean @default(false)
+ eventTime Int @default(0)
+ eventId String @default("")
+ updatedAt DateTime @updatedAt
+ workspace Workspace @relation(fields:[workspaceId],references:[id],onDelete:Cascade)
+}
+model BillingEvent {
+ id String @id
+ workspaceId String?
+ type String
+ status String @default("received")
+ payload Json
+ error String?
+ createdAt DateTime @default(now())
+ processedAt DateTime?
+}
+model Notification {
+ id String @id @default(cuid())
+ userId String
+ workspaceId String?
+ title String
+ text String
+ href String?
+ readAt DateTime?
+ createdAt DateTime @default(now())
+ user User @relation(fields:[userId],references:[id],onDelete:Cascade)
+ @@index([userId,createdAt])
+}
+model Job {
+ id String @id @default(cuid())
+ key String @unique
+ kind String
+ payload Json
+ status String @default("queued")
+ attempts Int @default(0)
+ availableAt DateTime @default(now())
+ lockedAt DateTime?
+ lockToken String?
+ error String?
+ createdAt DateTime @default(now())
+ completedAt DateTime?
+ @@index([status,availableAt])
+}
+model SupportRequest {
+ id String @id @default(cuid())
+ workspaceId String
+ userId String
+ email String
+ subject String
+ text String
+ status String @default("open")
+ replies Json @default("[]")
+ createdAt DateTime @default(now())
+ workspace Workspace @relation(fields:[workspaceId],references:[id],onDelete:Cascade)
+ @@index([workspaceId,createdAt])
+}
+model Enquiry {
+ id String @id @default(cuid())
+ name String
+ email String
+ company String?
+ text String
+ status String @default("new")
+ createdAt DateTime @default(now())
+}
+model ContentRevision {
+ id String @id @default(cuid())
+ slug String
+ title String
+ body String
+ published Boolean @default(false)
+ authorId String
+ createdAt DateTime @default(now())
+ @@index([slug,published,createdAt])
+}
+model AuditEvent {
+ id String @id @default(cuid())
+ workspaceId String?
+ actorId String
+ action String
+ targetId String
+ detail Json @default("{}")
+ createdAt DateTime @default(now())
+ @@index([workspaceId,createdAt])
+}
+model Usage {
+ id String @id @default(cuid())
+ workspaceId String
+ period String
+ aiCalls Int @default(0)
+ @@unique([workspaceId,period])
+}

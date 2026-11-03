@@ -1,5 +1,4 @@
-import PersonasPage from "./personas/page";
-
-export default function Page() {
-  return <PersonasPage />;
+import { PublicPage } from "@/components/public-page";
+export default function Home() {
+  return <PublicPage />;
 }

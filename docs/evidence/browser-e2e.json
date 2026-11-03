@@ -1,0 +1,207 @@
+{
+  "date": "2026-11-03T06:10:47.140Z",
+  "source": "Local Next.js production server",
+  "engine": "PostgreSQL 17 native",
+  "browser": "154.0.8037.57",
+  "checks": [
+    {
+      "name": "Keyboard skip link moves focus to the main landmark",
+      "status": "passed"
+    },
+    {
+      "name": "Public product-to-pricing navigation",
+      "status": "passed"
+    },
+    {
+      "name": "Browser registration, local email verification, session and onboarding persist",
+      "status": "passed"
+    },
+    {
+      "name": "Browser research capture and exact anchored observation",
+      "status": "passed"
+    },
+    {
+      "name": "AI unavailable state preserves manual cited persona authoring and human approval",
+      "status": "passed"
+    },
+    {
+      "name": "Browser publication omits raw transcript and revocation denies the shared view",
+      "status": "passed"
+    },
+    {
+      "name": "Browser private CSV and PDF exports download valid files",
+      "status": "passed"
+    },
+    {
+      "name": "Browser journeys and action briefs save to the database",
+      "status": "passed"
+    },
+    {
+      "name": "Browser edit, historical comparison, restore-as-new-draft, duplication and audience comparison",
+      "status": "passed"
+    },
+    {
+      "name": "Customer support persists and customer role cannot access staff pages",
+      "status": "passed"
+    },
+    {
+      "name": "Authenticated staff support reply and editorial revision are saved and audited",
+      "status": "passed"
+    },
+    {
+      "name": "320px / horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "320px /pricing horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "320px /app horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "320px /app/persona horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "320px /app/research horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "320px /app/exports horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "320px /admin/support horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "375px / horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "375px /pricing horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "375px /app horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "375px /app/persona horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "375px /app/research horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "375px /app/exports horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "375px /admin/support horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "768px / horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "768px /pricing horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "768px /app horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "768px /app/persona horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "768px /app/research horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "768px /app/exports horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "768px /admin/support horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "1280px / horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "1280px /pricing horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "1280px /app horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "1280px /app/persona horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "1280px /app/research horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "1280px /app/exports horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "1280px /admin/support horizontal layout",
+      "status": "passed"
+    },
+    {
+      "name": "320px workspace menu keyboard focus containment, Escape and focus restoration",
+      "status": "passed"
+    },
+    {
+      "name": "320px public mobile navigation",
+      "status": "passed"
+    },
+    {
+      "name": "Browser displays billing unavailability and rejects an unsupported private upload",
+      "status": "passed"
+    },
+    {
+      "name": "Browser saved persona survives sign-out and a new authenticated session",
+      "status": "passed"
+    }
+  ],
+  "accessibility": [
+    {
+      "label": "Public homepage desktop",
+      "violations": []
+    },
+    {
+      "label": "Pricing desktop",
+      "violations": []
+    },
+    {
+      "label": "Approved persona editor desktop",
+      "violations": []
+    },
+    {
+      "label": "Persona editor 320px",
+      "violations": []
+    },
+    {
+      "label": "Pricing 320px",
+      "violations": []
+    }
+  ],
+  "runtimeErrors": [],
+  "limitations": [
+    "Local email capture only; no real provider delivery, payments, S3, malware scanning or AI calls.",
+    "Automated Chromium/axe and keyboard checks do not certify screen-reader usability or hosted recovery."
+  ]
+}

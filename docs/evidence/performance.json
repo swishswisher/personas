@@ -1,0 +1,28 @@
+{
+  "scope": "Local production-server response timing and emitted JavaScript artifact sizes; not a Core Web Vitals or browser audit.",
+  "pagesMeasured": 23,
+  "p50ResponseMs": 14,
+  "p95ResponseMs": 37,
+  "largestChunks": [
+    {
+      "file": "34-s9nvef5sdp.js",
+      "bytes": 229288
+    },
+    {
+      "file": "2mq68-a1lxd5v.js",
+      "bytes": 169439
+    },
+    {
+      "file": "0cz1d0mv5g_q7.js",
+      "bytes": 112594
+    },
+    {
+      "file": "0xkwnzoqwwtqq.js",
+      "bytes": 106193
+    },
+    {
+      "file": "2gsioylfq3vh2.js",
+      "bytes": 74623
+    }
+  ]
+}

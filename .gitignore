@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+src/generated/
+.data/
+.vercel/
+.env*
+!.env.example
+coverage/
+test-results/
