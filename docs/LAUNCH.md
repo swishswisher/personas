@@ -1,6 +1,6 @@
 # Launch status and dependencies
 
-The Peach & Lilac implementation is recovered and improved on local branch `build/complete-personas-peach-lilac`, from source `9f19e6b329496c76754337c0ad151c57d032c84b`. The original `master`/production site is untouched. No push, merge, deployment or GitHub Actions run occurred. See `STATUS.md` and `VERIFICATION.md` for current local evidence.
+The Peach & Lilac implementation is recovered and improved on local branch `build/complete-personas-peach-lilac`, from source `9f19e6b329496c76754337c0ad151c57d032c84b`. Recovery validation preserved the original `master`/production site and used no GitHub Actions. The user subsequently authorized branch publication and merging into `master`; connected hosting may deploy that merge. This does not configure or verify the missing providers. See `STATUS.md` and `VERIFICATION.md` for current local evidence.
 
 ## What is implemented and locally verified
 
@@ -34,6 +34,6 @@ Enter credentials only in the hosting/environment secret settings, never chat, s
 - [x] Verify revision/approval integrity, share revocation, private files/exports, privacy, concurrency and worker/billing boundaries.
 - [x] Run native logical recovery and object-copy restoration in isolated fixtures.
 - [ ] Apply secure staging configuration and prove real provider flows plus hosted recovery.
-- [ ] User publishes the local commits, verifies the updated Preview, then separately authorizes any production promotion.
+- [ ] Verify the hosting deployment after the now-authorized branch publication/default-branch merge, then complete configured staging/provider acceptance.
 
-The existing draft PR is https://github.com/swishswisher/personas/pull/1 . Publication is the user's responsibility. Keep all current commits local; no Actions workflow may be created, enabled, dispatched or rerun.
+The existing draft PR is https://github.com/swishswisher/personas/pull/1 . The user has explicitly authorized pushing the recovery branch and merging into the default branch (`master`). No Actions workflow may be created, enabled, dispatched or rerun. Hosting/provider readiness must still be verified after publication.
